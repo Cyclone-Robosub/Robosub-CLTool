@@ -7,7 +7,7 @@
   <maintainer email="106027442+Dannykcw@users.noreply.github.com">dannykcw</maintainer>
   <license>MIT</license>
 
-  <depend>stdmsgs</depend>
+  <depend>std_msgs</depend>
   <depend>rclpy</depend>
 
   <test_depend>ament_copyright</test_depend>

@@ -1,14 +1,12 @@
+import rclpy
+from Plant import Plant
+from pwm_cltool import Pwm_Cltool
+
+import threading
 import time
 from time import sleep
-import math
-from std_msgs.msg import Int32MultiArray
-import rclpy
-from rclpy.node import Node
-from std_msgs.msg import String
-from std_msgs.msg import Bool
-from std_msgs.msg import Int64
-import threading
 
+# Define the CLTool Globals
 rev_pulse = 1100 * 1
 stop_pulse = 1500 * 1
 fwd_pulse_raw = (
@@ -26,7 +24,7 @@ fwd_set = [stop_pulse for i in range(4)] + [fwd_pulse, rev_pulse, fwd_pulse, rev
 crab_set = [stop_pulse for i in range(4)] + [fwd_pulse, fwd_pulse, rev_pulse, rev_pulse]
 down_set = [fwd_pulse, rev_pulse, fwd_pulse, rev_pulse] + [stop_pulse for i in range(4)]
 test_set = [1900, 1900, 1100, 1250, 1300, 1464, 1535, 1536]
-barrell = [fwd_pulse, fwd_pulse, fwd_pulse, fwd_pulse] + [stop_pulse for i in range(4)]
+barrel = [fwd_pulse, fwd_pulse, fwd_pulse, fwd_pulse] + [stop_pulse for i in range(4)]
 summer = [rev_pulse, fwd_pulse, fwd_pulse, rev_pulse] + [stop_pulse for i in range(4)]
 spin_set = [stop_pulse for i in range(4)] + [fwd_pulse for i in range(4)]
 
@@ -38,137 +36,6 @@ torpedo = [fwd_pulse, fwd_pulse, fwd_pulse, fwd_pulse] + [
 ]
 
 
-class Pwm_Cltool(Node):
-    def __init__(self):
-        super().__init__("python_cltool_node")
-        self.commandPublisher = self.create_publisher(
-            Int32MultiArray, "array_Cltool_topic", 10
-        )
-        self.durationPublisher = self.create_publisher(
-            Int64, "duration_Cltool_topic", 10
-        )
-        self.ManualToggleSwitch = self.create_publisher(Bool, "manual_toggle_switch", 3)
-        self.ManualOverride = self.create_publisher(Bool, "manualOverride", 4)
-
-    def publish_array(self, pwm_array):
-        msg = Int32MultiArray()
-        msg.data = pwm_array
-        self.commandPublisher.publish(msg)
-        print(msg.data)
-
-    def publish_duration(self, durationSec):
-        msg = Int64()
-        msg.data = durationSec
-        self.durationPublisher.publish(msg)
-        print(msg.data)
-
-    def publish_manual_switch(self, isManualEnabled):
-        msg = Bool()
-        msg.data = isManualEnabled
-        self.ManualToggleSwitch.publish(msg)
-
-    #  print(msg.data)
-    def publish_manual_override(self, isMistakeMade):
-        msg = Bool()
-        msg.data = isMistakeMade
-        self.ManualOverride.publish(msg)
-        print(msg.data)
-
-
-class Plant:
-    def __init__(self):
-        # Thruster positions
-        self.thruster_positions = [
-            [0.2535, -0.2035, 0.042],
-            [0.2535, 0.2035, 0.042],
-            [-0.2545, -0.2035, 0.042],
-            [-0.2545, 0.2035, 0.042],
-            [0.1670, -0.1375, -0.049],
-            [0.1670, 0.1375, -0.049],
-            [-0.1975, -0.1165, -0.049],
-            [-0.1975, 0.1165, -0.049],
-        ]
-
-        # Thruster directions
-        sin45 = math.sin(math.pi / 4)
-        self.thruster_directions = [
-            [0, 0, 1],
-            [0, 0, -1],
-            [0, 0, 1],
-            [0, 0, -1],
-            [-sin45, -sin45, 0],
-            [sin45, -sin45, 0],
-            [-sin45, sin45, 0],
-            [sin45, sin45, 0],
-        ]
-
-        # Thruster torques
-        self.thruster_torques = [
-            self.cross_product(self.thruster_positions[i], self.thruster_directions[i])
-            for i in range(8)
-        ]
-
-        # Compute wrench matrix (6x8)
-        self.wrench_matrix_transposed = [[0] * 6 for _ in range(8)]
-        for i in range(8):
-            self.wrench_matrix_transposed[i][0:3] = self.thruster_directions[i]
-            self.wrench_matrix_transposed[i][3:6] = self.thruster_torques[i]
-
-        # Transpose to get wrench matrix (6x8)
-        self.wrench_matrix = self.transpose_matrix(self.wrench_matrix_transposed)
-
-    def pwm_force_scalar(self, x):
-        x = x / 1000
-        if 1100 <= x < 1460:
-            force = (
-                (-1.24422882971549e-8) * x**3
-                + (4.02057100632393e-5) * x**2
-                - 0.0348619861030835 * x
-                + 3.90671429105423
-            )
-        elif 1460 <= x <= 1540:
-            force = 0
-        elif 1540 < x <= 1900:
-            force = (
-                (-1.64293565374284e-8) * x**3
-                + (9.45962838560648e-5) * x**2
-                - 0.170812079190679 * x
-                + 98.7232373648272
-            )
-        else:
-            raise ValueError("PWM value out of valid range (1100-1900)")
-        return force
-
-    def pwm_force(self, pwm_set):
-        thruster_forces = [
-            self.pwm_force_scalar(pwm_set[i]) for i in range(len(pwm_set))
-        ]
-        force = self.matrix_vector_multiply(self.wrench_matrix, thruster_forces)
-        print(force)
-
-    @staticmethod
-    def transpose_matrix(matrix):
-        """Transposes a 2D list (matrix)."""
-        return [[row[i] for row in matrix] for i in range(len(matrix[0]))]
-
-    @staticmethod
-    def matrix_vector_multiply(matrix, vector):
-        """Multiplies a matrix (list of lists) by a vector (list)."""
-        return [
-            sum(matrix[i][j] * vector[j] for j in range(len(vector)))
-            for i in range(len(matrix))
-        ]
-
-    @staticmethod
-    def cross_product(a, b):
-        """Computes the cross product of two 3D vectors a and b."""
-        return [
-            a[1] * b[2] - a[2] * b[1],
-            a[2] * b[0] - a[0] * b[2],
-            a[0] * b[1] - a[1] * b[0],
-        ]
-
-
 class Thrust_Control:
     def __init__(self):
         self.plant = Plant()
@@ -176,7 +43,7 @@ class Thrust_Control:
         self.thrusters = [3, 2, 5, 4, 18, 20, 19, 21]
         rclpy.init()
         self.arraysomething = [3, 2, 5, 4, 18, 20, 19, 21]
-        self.publishCommandDurationObject = PublisherPython()
+        self.publishCommandDurationObject = Pwm_Cltool()
         self.ros_thread = threading.Thread(target=self.spin_ros)
         self.ros_thread.start()
         print("Switching onto manual control...")
@@ -269,10 +136,8 @@ class Thrust_Control:
     def reaction(self, pwm_set, scale=1):
         pwm = [scale * (i - stop_pulse) + stop_pulse for i in pwm_set]
         self.plant.pwm_force(pwm)
-
-
+        
 def main():
     print("Type in : tcs = Thrust_Control()")
-
 
 main()
