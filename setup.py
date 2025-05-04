@@ -19,7 +19,7 @@ setup(
     tests_require=["pytest"],
     entry_points={
         "console_scripts": [
-            "pwm_cltool_node = pwm_cltool.Thrust_Control:main",
+            "pwm_cltool_node = pwm_cltool.thrust_control:main",
         ],
     },
 )

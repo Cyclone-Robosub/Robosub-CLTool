@@ -1,6 +1,6 @@
 import rclpy
-from Plant import Plant
-from Pwm_Cltool import Pwm_Cltool
+from .pwm_cltool import Pwm_Cltool
+from .plant import Plant
 
 import threading
 from time import sleep
@@ -97,7 +97,9 @@ class Thrust_Control:
         Safely exits manual control by disabling the manual switch and shutting down ROS.
         """
         print("Shutting down CL Tool and Manual Control")
-        self.publishCommandDurationObject.publish_manual_switch(False)
+        if rclpy.ok():
+            self.publishCommandDurationObject.publish_manual_switch(False)
+            sleep(0.2)
         rclpy.shutdown()
 
     def spin_ros(self) -> None:
@@ -172,7 +174,23 @@ class Thrust_Control:
         pwm = [scale * (i - stop_pulse) + stop_pulse for i in pwm_set]
         self.plant.pwm_force(pwm)
 
-def main() -> None:
-    print("Type in : tcs = Thrust_Control()")
+def main(args: None = None) -> None:
+    print("Initializing Thrust Control...")
+    tcs = Thrust_Control()
 
-main()
+    try:
+        while True:
+            user_input = input(">>> ")
+            if user_input.strip().lower() == "shutdown":
+                tcs.exitCLTool()
+                break
+            try:
+                exec(user_input, globals(), locals() | {"tcs": tcs})
+            except Exception as e:
+                print(f"Error executing command: {e}")
+    except KeyboardInterrupt:
+        print("Keyboard interrupt received. Exiting...")
+        tcs.exitCLTool()
+
+if __name__ == '__main__':
+    main()

@@ -1,6 +1,7 @@
 import math
 from typing import List
 
+
 class Plant:
     """
     Represents the physical configuration and dynamics of a robot with 8 thrusters.
@@ -17,6 +18,48 @@ class Plant:
         wrench_matrix_transposed (List[List[float]]): Transposed wrench matrix (8x6).
         wrench_matrix (List[List[float]]): Standard wrench matrix (6x8) used to compute net force/torque.
     """
+
+    def __init__(self) -> None:
+        # Thruster positions: List of 3D coordinates
+        self.thruster_positions: List[List[float]] = [
+            [0.2535, -0.2035, 0.042],
+            [0.2535, 0.2035, 0.042],
+            [-0.2545, -0.2035, 0.042],
+            [-0.2545, 0.2035, 0.042],
+            [0.1670, -0.1375, -0.049],
+            [0.1670, 0.1375, -0.049],
+            [-0.1975, -0.1165, -0.049],
+            [-0.1975, 0.1165, -0.049],
+        ]
+        
+        # Thruster directions: List of 3D unit vectors
+        sin45: float = math.sin(math.pi / 4)
+        self.thruster_directions: List[List[float]] = [
+            [0.0, 0.0, 1.0],
+            [0.0, 0.0, -1.0],
+            [0.0, 0.0, 1.0],
+            [0.0, 0.0, -1.0],
+            [-sin45, -sin45, 0.0],
+            [sin45, -sin45, 0.0],
+            [-sin45, sin45, 0.0],
+            [sin45, sin45, 0.0],
+        ]
+        # Thruster torques: Cross product of positions and directions
+        self.thruster_torques: List[List[float]] = [
+            self.cross_product(self.thruster_positions[i], self.thruster_directions[i])
+            for i in range(8)
+        ]
+
+        # Compute wrench matrix (6x8)
+        self.wrench_matrix_transposed: List[List[float]] = [[0.0] * 6 for _ in range(8)]
+        for i in range(8):
+            self.wrench_matrix_transposed[i][0:3] = self.thruster_directions[i]
+            self.wrench_matrix_transposed[i][3:6] = self.thruster_torques[i]
+
+        # Transpose to get wrench matrix (6x8)
+        self.wrench_matrix: List[List[float]] = self.transpose_matrix(
+            self.wrench_matrix_transposed
+        )
 
     def pwm_force_scalar(self, x: float) -> float:
         """
@@ -60,10 +103,10 @@ class Plant:
         Args:
             pwm_set (List[float]): List of PWM signal values for the 8 thrusters.
         """
-        thruster_forces: List[float] = [
-            self.pwm_force_scalar(pwm) for pwm in pwm_set
-        ]
-        force: List[float] = self.matrix_vector_multiply(self.wrench_matrix, thruster_forces)
+        thruster_forces: List[float] = [self.pwm_force_scalar(pwm) for pwm in pwm_set]
+        force: List[float] = self.matrix_vector_multiply(
+            self.wrench_matrix, thruster_forces
+        )
         print(force)
 
     @staticmethod
@@ -80,7 +123,9 @@ class Plant:
         return [[row[i] for row in matrix] for i in range(len(matrix[0]))]
 
     @staticmethod
-    def matrix_vector_multiply(matrix: List[List[float]], vector: List[float]) -> List[float]:
+    def matrix_vector_multiply(
+        matrix: List[List[float]], vector: List[float]
+    ) -> List[float]:
         """
         Multiplies a matrix by a vector.
 
