@@ -1,0 +1,1 @@
+colcon test --pytest-with-coverage --pytest-args --cov-report=term --event-handlers console_direct+
