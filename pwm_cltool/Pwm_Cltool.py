@@ -1,85 +1,210 @@
-from std_msgs.msg import Int32MultiArray, Bool, Int64
-from rclpy.node import Node
-from rclpy.publisher import Publisher
+import rclpy
+from .pwm_publisher import Pwm_Publisher
+from .plant import Plant
+
+import threading
+from time import sleep
 from typing import List
+import code
 
-class Pwm_Cltool(Node):
+# Define the CLTool Globals
+rev_pulse: int = 1100
+stop_pulse: int = 1500
+fwd_pulse_raw: int = 1900
+rev_adj: float = 1.0
+fwd_pulse: int = int(fwd_pulse_raw * rev_adj)
+frequency: int = 10
+pwm_file: str = "pwm_file.csv"
+
+zero_set: List[int] = [0 for _ in range(8)]
+stop_set: List[int] = [stop_pulse for _ in range(8)]
+
+fwd_set: List[int] = [stop_pulse for _ in range(4)] + [
+    fwd_pulse,
+    rev_pulse,
+    fwd_pulse,
+    rev_pulse,
+]
+crab_set: List[int] = [stop_pulse for _ in range(4)] + [
+    fwd_pulse,
+    fwd_pulse,
+    rev_pulse,
+    rev_pulse,
+]
+down_set: List[int] = [fwd_pulse, rev_pulse, fwd_pulse, rev_pulse] + [
+    stop_pulse for _ in range(4)
+]
+test_set: List[int] = [1900, 1900, 1100, 1250, 1300, 1464, 1535, 1536]
+barrel: List[int] = [fwd_pulse for _ in range(4)] + [stop_pulse for _ in range(4)]
+summer: List[int] = [rev_pulse, fwd_pulse, fwd_pulse, rev_pulse] + [
+    stop_pulse for _ in range(4)
+]
+spin_set: List[int] = [stop_pulse for _ in range(4)] + [fwd_pulse for _ in range(4)]
+
+torpedo: List[int] = [fwd_pulse, fwd_pulse, fwd_pulse, fwd_pulse] + [
+    fwd_pulse,
+    rev_pulse,
+    fwd_pulse,
+    rev_pulse,
+]
+
+
+class Pwm_Cltool:
     """
-    ROS 2 Node for publishing PWM control and override signals to various topics.
+    Provides a manual control interface for a thrust system using the Pwm_Cltool ROS 2 node.
 
-    This node is responsible for sending commands related to the pwm control tool (Cltool), including:
-    - PWM signal arrays to control thrusters or actuators.
-    - Duration values indicating how long a command should be applied.
-    - Boolean toggles for manual mode activation and emergency override.
+    This class initializes publishers for sending PWM signals and duration commands
+    to control a robotic system's thrusters. It supports basic manual operations,
+    overrides, and signal scaling for real-time testing or remote control.
 
-    Topics Published:
-        - 'array_Cltool_topic' (Int32MultiArray): PWM command array.
-        - 'duration_Cltool_topic' (Int64): Duration of the command in seconds.
-        - 'manual_toggle_switch' (Bool): Manual mode toggle signal.
-        - 'manualOverride' (Bool): Manual override/emergency stop trigger.
+    Attributes:
+        plant (Plant): An instance of the Plant class for modeling/control feedback.
+        thrusters (List[int]): Pin numbers for each thruster.
+        publishCommandDurationObject (Pwm_Cltool): ROS node used to publish control messages.
+        ros_thread (threading.Thread): Thread to keep the ROS node spinning.
     """
 
-    def __init__(self) -> None:
+    def __init__(self):
         """
-        Initializes the node and its publishers.
+        Initializes ROS, thruster pins, and sets up publishers in a background thread.
+        Automatically enables manual mode and provides CLI instructions.
         """
-        super().__init__("python_cltool_node")
-        self.commandPublisher: Publisher = self.create_publisher(
-            Int32MultiArray, "array_Cltool_topic", 10
-        )
-        self.durationPublisher: Publisher = self.create_publisher(
-            Int64, "duration_Cltool_topic", 10
-        )
-        self.ManualToggleSwitch: Publisher = self.create_publisher(
-            Bool, "manual_toggle_switch", 3
-        )
-        self.ManualOverride: Publisher = self.create_publisher(
-            Bool, "manualOverride", 4
-        )
+        self.plant = Plant()
+        self.thrusters: List[int] = [3, 2, 5, 4, 18, 20, 19, 21]
+        rclpy.init()
+        self.publishCommandDurationObject = Pwm_Publisher()
+        self.ros_thread = threading.Thread(target=self.spin_ros)
+        self.ros_thread.start()
+        print("Switching onto manual control...")
+        sleep(4)
+        self.publishCommandDurationObject.publish_manual_switch(True)
+        print("Ready to input manual commands")
+        print("Please type tcs.exitCLTool() to safely exit manual control.\n")
 
-    def publish_array(self, pwm_array: List[int]) -> None:
+    def override(self, durationMS: int = -1, pwm_set: List[int] = stop_set):
         """
-        Publishes a list of PWM values to the 'array_Cltool_topic'.
-
-        Args:
-            pwm_array (List[int]): List of PWM values (typically 8 elements for 8 thrusters).
-        """
-        msg = Int32MultiArray()
-        msg.data = pwm_array
-        self.commandPublisher.publish(msg)
-        print(msg.data)
-
-    def publish_duration(self, durationSec: int) -> None:
-        """
-        Publishes the command duration to the 'duration_Cltool_topic'.
+        Publishes a manual override command, typically for emergency situations.
 
         Args:
-            durationSec (int): Duration in seconds for which the PWM command should be applied.
+            durationMS (int): Duration in milliseconds. Use -1 for continuous command.
+            pwm_set (List[int]): PWM values to apply to thrusters during override.
         """
-        msg = Int64()
-        msg.data = durationSec
-        self.durationPublisher.publish(msg)
-        print(msg.data)
+        self.publishCommandDurationObject.publish_manual_override(True)
+        sleep(0.2)
+        self.publishCommandDurationObject.publish_array(pwm_set)
+        self.publishCommandDurationObject.publish_duration(durationMS)
 
-    def publish_manual_switch(self, isManualEnabled: bool) -> None:
+    def exitCLTool(self) -> None:
         """
-        Publishes a boolean flag to toggle manual control mode.
+        Safely exits manual control by disabling the manual switch and shutting down ROS.
+        """
+        print("Shutting down CL Tool and Manual Control")
+        if rclpy.ok():
+            self.publishCommandDurationObject.publish_manual_switch(False)
+            sleep(0.2)
+        rclpy.shutdown()
+
+    def spin_ros(self) -> None:
+        """
+        Spins the ROS node in a separate thread to process incoming/outgoing messages.
+        """
+        rclpy.spin(self.publishCommandDurationObject)
+
+    def pwm(self, pwm_set: List[int], scale: float = 1.0) -> None:
+        """
+        Sends a scaled or raw PWM command to all thrusters.
 
         Args:
-            isManualEnabled (bool): True to enable manual control, False to disable.
+            pwm_set (List[int]): List of PWM values to apply.
+            scale (float): Optional scale factor to apply to the PWM signal.
         """
-        msg = Bool()
-        msg.data = isManualEnabled
-        self.ManualToggleSwitch.publish(msg)
+        if scale != 1:
+            pwm_set = self.scaled_pwm(pwm_set, scale)
+        if len(pwm_set) != len(self.thrusters):
+            print("Wrong length for pwm set\n")
+            return
+        print("pwm function executed.")
+        pwm_set = [int(i) for i in pwm_set]
+        self.publishCommandDurationObject.publish_array(pwm_set)
+        self.publishCommandDurationObject.publish_duration(-1)
 
-    def publish_manual_override(self, isMistakeMade: bool) -> None:
+    def scaled_pwm(self, pwm_set: List[int], scale: float) -> List[int]:
         """
-        Publishes a manual override signal, typically used for emergency stops or correction.
+        Scales the input PWM values relative to the stop pulse.
 
         Args:
-            isMistakeMade (bool): True if an override is needed due to error or fault.
+            pwm_set (List[int]): The original PWM values.
+            scale (float): A scaling factor to apply to the PWM signal.
+
+        Returns:
+            List[int]: The scaled PWM values.
         """
-        msg = Bool()
-        msg.data = isMistakeMade
-        self.ManualOverride.publish(msg)
-        print(msg.data)
+        new_pwm = [int(scale * (i - stop_pulse) + stop_pulse) for i in pwm_set]
+        return new_pwm
+
+    def timed_pwm(self, time_s: int, pwm_set: List[int], scale: float = 1.0) -> None:
+        """
+        Sends a PWM command for a fixed duration.
+
+        Args:
+            time_s (int): Duration in seconds for which to apply the PWM.
+            pwm_set (List[int]): PWM values to apply.
+            scale (float): Optional scale factor for PWM values.
+        """
+        if scale != 1:
+            pwm_set = self.scaled_pwm(pwm_set, scale)
+        print("Executing timed_pwm function...")
+        self.publishCommandDurationObject.publish_array(pwm_set)
+        self.publishCommandDurationObject.publish_duration(time_s)
+
+    def read(self) -> None:
+        """
+        Reads and prints the contents of the PWM command log file.
+        """
+        with open(pwm_file, "r") as logf:
+            file_contents = logf.read()
+            print(file_contents)
+
+    def reaction(self, pwm_set: List[int], scale: float = 1.0) -> None:
+        """
+        Sends scaled PWM values to the plant model for reaction force estimation.
+
+        Args:
+            pwm_set (List[int]): PWM command values.
+            scale (float): Optional scale factor to modify PWM before processing.
+        """
+        pwm = [scale * (i - stop_pulse) + stop_pulse for i in pwm_set]
+        self.plant.pwm_force(pwm)
+
+
+def main() -> None:
+    print("Initializing Pwm CLtool...")
+    clt = Pwm_Cltool()
+
+    # Launch an interactive console with `tcs` in the namespace
+    banner = (
+        "Interactive Thrust_Control Console\n"
+        "Available object: clt (Pwm_Cltool instance)\n"
+        "Type 'shutdown' to cleanly exit, or use exit()/Ctrl-D.\n"
+    )
+    console = code.InteractiveConsole(
+        locals={
+            "clt": clt,
+            "stop_set": stop_set,
+            "fwd_set": fwd_set,
+            "crab_set": crab_set,
+            "down_set": down_set,
+            "test_set": test_set,
+            "barrel": barrel,
+            "summer": summer,
+            "spin_set": spin_set,
+            "torpedo": torpedo,
+        }
+    )
+    console.interact(banner=banner, exitmsg="Console exiting, shutting down...")
+    # After user exits console, perform cleanup
+    clt.exitCLTool()
+
+
+if __name__ == "__main__":
+    main()

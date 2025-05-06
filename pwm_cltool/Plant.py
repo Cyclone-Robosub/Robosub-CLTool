@@ -31,7 +31,7 @@ class Plant:
             [-0.1975, -0.1165, -0.049],
             [-0.1975, 0.1165, -0.049],
         ]
-        
+
         # Thruster directions: List of 3D unit vectors
         sin45: float = math.sin(math.pi / 4)
         self.thruster_directions: List[List[float]] = [
