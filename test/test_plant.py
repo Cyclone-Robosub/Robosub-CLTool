@@ -8,12 +8,15 @@ class TestPwmForceScalar:
     @pytest.fixture
     def plant(self):
         return Plant()
+    
 
     @pytest.mark.parametrize(
         "pwm_raw, expected_branch",
         [
-            # raw inputs are in the same units as the code expects, so that after dividing by 1000
-            # we hit the intended branches. E.g. 1,200,000/1000 = 1200 → first cubic piece
+            # raw inputs are in the same units as the code expects,
+            # so that after dividing by 1000
+            # we hit the intended branches.
+            # E.g. 1,200,000/1000 = 1200 → first cubic piece
             (1_200_000, "low"),
             (1_500_000, "mid"),
             (1_600_000, "high"),
