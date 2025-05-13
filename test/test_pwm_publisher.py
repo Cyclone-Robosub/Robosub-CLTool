@@ -1,93 +1,128 @@
-# tests/test_pwm_publisher.py
-
 import pytest
-from std_msgs.msg import Int32MultiArray, Bool, Int64
-from rclpy.publisher import Publisher
-from pwm_cltool.pwm_publisher import Pwm_Publisher
+import rclpy
+from std_msgs.msg import Int32MultiArray, Int64, Bool
 
-@pytest.fixture
-def node():
-    """Return a fresh instance of the ROS2 node under test."""
-    return Pwm_Publisher()
+@pytest.mark.usefixtures('ros_init_and_shutdown')
+class TestPwmPublisher:
+    """
+    Verify that each publisher is correctly instantiated
+    and that publishing methods actually send on the ROS topics.
+    """
 
-def test_node_instantiation(node):
-    """Ensure that on init the node has four publishers of the correct types."""
-    # Check that attributes exist
-    assert hasattr(node, 'commandPublisher')
-    assert hasattr(node, 'durationPublisher')
-    assert hasattr(node, 'ManualToggleSwitch')
-    assert hasattr(node, 'ManualOverride')
+    def test_node_instantiation(self, pwm_node):
+        # Ensure all publishers exist and have correct interface
+        pubs = {
+            'commandPublisher': (Int32MultiArray, '/array_Cltool_topic'),
+            'durationPublisher': (Int64,           '/duration_Cltool_topic'),
+            'ManualToggleSwitch': (Bool,           '/manual_toggle_switch'),
+            'ManualOverride': (Bool,               '/manualOverride'),
+        }
 
-    # Check they are Publisher instances
-    for attr in ('commandPublisher', 'durationPublisher', 'ManualToggleSwitch', 'ManualOverride'):
-        pub = getattr(node, attr)
-        assert isinstance(pub, Publisher)
+        for attr, (msg_type, topic) in pubs.items():
+            pub = getattr(pwm_node, attr, None)
+            assert pub is not None, f"{attr} missing"
+            assert pub.msg_type is msg_type
+            assert pub.topic_name == topic
 
-    # Verify topic names and message types
-    assert node.commandPublisher.topic_name == 'array_Cltool_topic'
-    assert node.commandPublisher.msg_type is Int32MultiArray
+    @pytest.mark.parametrize(
+        'data, msg_type, topic_attr',
+        [
+            ([0, 1, 2, 3, 4, 5, 6, 7], Int32MultiArray, 'commandPublisher'),
+        ]
+    )
+    def test_publish_array(self, pwm_node, data, msg_type, topic_attr):
+        received = []
 
-    assert node.durationPublisher.topic_name == 'duration_Cltool_topic'
-    assert node.durationPublisher.msg_type is Int64
+        # create a subscription to mirror exactly the publisher under test
+        sub = pwm_node.create_subscription(
+            msg_type,
+            getattr(pwm_node, topic_attr).topic_name,
+            lambda msg: received.append(msg),
+            10
+        )
 
-    assert node.ManualToggleSwitch.topic_name == 'manual_toggle_switch'
-    assert node.ManualToggleSwitch.msg_type is Bool
+        # call the method under test
+        pwm_node.publish_array(data)
 
-    assert node.ManualOverride.topic_name == 'manualOverride'
-    assert node.ManualOverride.msg_type is Bool
+        # spin once to let the message through
+        rclpy.spin_once(pwm_node, timeout_sec=1.0)
 
-@pytest.mark.parametrize("pwm_array", [
-    [0, 100, 200, 300, 400, 500, 600, 700],
-    list(range(8)),  # 0..7
-])
-def test_publish_array(node, pwm_array, monkeypatch):
-    """publish_array should wrap the list in Int32MultiArray and call publish()."""
-    published = []
-    monkeypatch.setattr(node.commandPublisher, 'publish', lambda msg: published.append(msg))
+        assert len(received) == 1
+        assert isinstance(received[0], msg_type)
+        assert received[0].data == data
 
-    node.publish_array(pwm_array)
+        pwm_node.destroy_subscription(sub)
 
-    # exactly one message was published
-    assert len(published) == 1
-    msg = published[0]
-    assert isinstance(msg, Int32MultiArray)
-    assert msg.data == pwm_array
+    @pytest.mark.parametrize(
+        'value, msg_type, topic_attr',
+        [
+            (42,    Int64, 'durationPublisher'),
+        ]
+    )
+    def test_publish_duration(self, pwm_node, value, msg_type, topic_attr):
+        received = []
+        sub = pwm_node.create_subscription(
+            msg_type,
+            getattr(pwm_node, topic_attr).topic_name,
+            lambda msg: received.append(msg),
+            10
+        )
 
-@pytest.mark.parametrize("duration", [0, 5, 123456789])
-def test_publish_duration(node, duration, monkeypatch):
-    """publish_duration should wrap the int in Int64 and call publish()."""
-    published = []
-    monkeypatch.setattr(node.durationPublisher, 'publish', lambda msg: published.append(msg))
+        pwm_node.publish_duration(value)
+        rclpy.spin_once(pwm_node, timeout_sec=1.0)
 
-    node.publish_duration(duration)
+        assert len(received) == 1
+        assert isinstance(received[0], msg_type)
+        assert received[0].data == value
 
-    assert len(published) == 1
-    msg = published[0]
-    assert isinstance(msg, Int64)
-    assert msg.data == duration
+        pwm_node.destroy_subscription(sub)
 
-@pytest.mark.parametrize("flag", [True, False])
-def test_publish_manual_switch(node, flag, monkeypatch):
-    """publish_manual_switch should wrap the bool in Bool and call publish()."""
-    published = []
-    monkeypatch.setattr(node.ManualToggleSwitch, 'publish', lambda msg: published.append(msg))
+    @pytest.mark.parametrize(
+        'flag, topic_attr',
+        [
+            (True,  'ManualToggleSwitch'),
+            (False, 'ManualToggleSwitch'),
+        ]
+    )
+    def test_publish_manual_switch(self, pwm_node, flag, topic_attr):
+        received = []
+        sub = pwm_node.create_subscription(
+            Bool,
+            getattr(pwm_node, topic_attr).topic_name,
+            lambda msg: received.append(msg),
+            10
+        )
 
-    node.publish_manual_switch(flag)
+        pwm_node.publish_manual_switch(flag)
+        rclpy.spin_once(pwm_node, timeout_sec=1.0)
 
-    assert len(published) == 1
-    msg = published[0]
-    assert isinstance(msg, Bool)
-    assert msg.data is flag
+        assert len(received) == 1
+        assert isinstance(received[0], Bool)
+        assert received[0].data is flag
 
-@pytest.mark.parametrize("flag", [True, False])
-def test_publish_manual_override(node, flag, monkeypatch):
-    """publish_manual_override should wrap the bool in Bool and call publish()."""
-    published = []
-    monkeypatch.setattr(node.ManualOverride, 'publish', lambda msg: published.append(msg))
+        pwm_node.destroy_subscription(sub)
 
-    node.publish_manual_override(flag)
+    @pytest.mark.parametrize(
+        'flag, topic_attr',
+        [
+            (True,  'ManualOverride'),
+            (False, 'ManualOverride'),
+        ]
+    )
+    def test_publish_manual_override(self, pwm_node, flag, topic_attr):
+        received = []
+        sub = pwm_node.create_subscription(
+            Bool,
+            getattr(pwm_node, topic_attr).topic_name,
+            lambda msg: received.append(msg),
+            10
+        )
 
-    assert len(published) == 1
-    msg = published[0]
-    assert isinstance(msg, Bool)
-    assert msg.data is flag
+        pwm_node.publish_manual_override(flag)
+        rclpy.spin_once(pwm_node, timeout_sec=1.0)
+
+        assert len(received) == 1
+        assert isinstance(received[0], Bool)
+        assert received[0].data is flag
+
+        pwm_node.destroy_subscription(sub)
