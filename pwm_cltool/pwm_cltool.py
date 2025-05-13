@@ -1,8 +1,8 @@
+import threading
 import rclpy
 from .pwm_publisher import Pwm_Publisher
 from .plant import Plant
 
-import threading
 from time import sleep
 from typing import List
 import code
@@ -13,8 +13,6 @@ stop_pulse: int = 1500
 fwd_pulse_raw: int = 1900
 rev_adj: float = 1.0
 fwd_pulse: int = int(fwd_pulse_raw * rev_adj)
-frequency: int = 10
-pwm_file: str = "pwm_file.csv"
 
 zero_set: List[int] = [0 for _ in range(8)]
 stop_set: List[int] = [stop_pulse for _ in range(8)]
@@ -64,7 +62,7 @@ class Pwm_Cltool:
         ros_thread (threading.Thread): Thread to keep the ROS node spinning.
     """
 
-    def __init__(self):
+    def __init__(self, log_file: str = "pwm_file.csv"):
         """
         Initializes ROS, thruster pins, and sets up publishers in a background thread.
         Automatically enables manual mode and provides CLI instructions.
@@ -75,11 +73,35 @@ class Pwm_Cltool:
         self.publishCommandDurationObject = Pwm_Publisher()
         self.ros_thread = threading.Thread(target=self.spin_ros)
         self.ros_thread.start()
+        self.logFile = log_file
         print("Switching onto manual control...")
-        sleep(4)
+        sleep(0.5)
         self.publishCommandDurationObject.publish_manual_switch(True)
         print("Ready to input manual commands")
-        print("Please type tcs.exitCLTool() to safely exit manual control.\n")
+        print("Please type clt.exitCLTool() to safely exit manual control.\n")
+
+    def start_console(self):
+        # Launch an interactive console with `tcs` in the namespace
+        banner = (
+            "Interactive Thrust_Control Console\n"
+            "Available object: clt (Pwm_Cltool instance)\n"
+            "Type 'shutdown' to cleanly exit, or use exit()/Ctrl-D.\n"
+        )
+        console = code.InteractiveConsole(
+            locals={
+                "clt": self,
+                "stop_set": stop_set,
+                "fwd_set": fwd_set,
+                "crab_set": crab_set,
+                "down_set": down_set,
+                "test_set": test_set,
+                "barrel": barrel,
+                "summer": summer,
+                "spin_set": spin_set,
+                "torpedo": torpedo,
+            }
+        )
+        console.interact(banner=banner, exitmsg="Console exiting, shutting down...")
 
     def override(self, durationMS: int = -1, pwm_set: List[int] = stop_set):
         """
@@ -99,9 +121,7 @@ class Pwm_Cltool:
         Safely exits manual control by disabling the manual switch and shutting down ROS.
         """
         print("Shutting down CL Tool and Manual Control")
-        if rclpy.ok():
-            self.publishCommandDurationObject.publish_manual_switch(False)
-            sleep(0.2)
+        self.publishCommandDurationObject.publish_manual_switch(False)
         rclpy.shutdown()
 
     def spin_ros(self) -> None:
@@ -153,7 +173,7 @@ class Pwm_Cltool:
         """
         if scale != 1:
             pwm_set = self.scaled_pwm(pwm_set, scale)
-        print("Executing timed_pwm function...")
+        print("Executing timed_pwm...")
         self.publishCommandDurationObject.publish_array(pwm_set)
         self.publishCommandDurationObject.publish_duration(time_s)
 
@@ -161,7 +181,7 @@ class Pwm_Cltool:
         """
         Reads and prints the contents of the PWM command log file.
         """
-        with open(pwm_file, "r") as logf:
+        with open(self.logFile, "r") as logf:
             file_contents = logf.read()
             print(file_contents)
 
@@ -175,36 +195,3 @@ class Pwm_Cltool:
         """
         pwm = [scale * (i - stop_pulse) + stop_pulse for i in pwm_set]
         self.plant.pwm_force(pwm)
-
-
-def main() -> None:
-    print("Initializing Pwm CLtool...")
-    clt = Pwm_Cltool()
-
-    # Launch an interactive console with `tcs` in the namespace
-    banner = (
-        "Interactive Thrust_Control Console\n"
-        "Available object: clt (Pwm_Cltool instance)\n"
-        "Type 'shutdown' to cleanly exit, or use exit()/Ctrl-D.\n"
-    )
-    console = code.InteractiveConsole(
-        locals={
-            "clt": clt,
-            "stop_set": stop_set,
-            "fwd_set": fwd_set,
-            "crab_set": crab_set,
-            "down_set": down_set,
-            "test_set": test_set,
-            "barrel": barrel,
-            "summer": summer,
-            "spin_set": spin_set,
-            "torpedo": torpedo,
-        }
-    )
-    console.interact(banner=banner, exitmsg="Console exiting, shutting down...")
-    # After user exits console, perform cleanup
-    clt.exitCLTool()
-
-
-if __name__ == "__main__":
-    main()
