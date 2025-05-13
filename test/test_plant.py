@@ -8,7 +8,6 @@ class TestPwmForceScalar:
     @pytest.fixture
     def plant(self):
         return Plant()
-    
 
     @pytest.mark.parametrize(
         "pwm_raw, expected_branch",

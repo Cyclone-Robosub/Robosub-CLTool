@@ -1,4 +1,6 @@
 import threading
+from rclpy.executors import SingleThreadedExecutor
+from rclpy.executors import ExternalShutdownException
 import rclpy
 from .pwm_publisher import Pwm_Publisher
 from .plant import Plant
@@ -124,11 +126,18 @@ class Pwm_Cltool:
         self.publishCommandDurationObject.publish_manual_switch(False)
         rclpy.shutdown()
 
+    
     def spin_ros(self) -> None:
-        """
-        Spins the ROS node in a separate thread to process incoming/outgoing messages.
-        """
-        rclpy.spin(self.publishCommandDurationObject)
+        """Spin via manual executor loop to avoid wait-set bugs (e.g. in testing)."""
+        executor = SingleThreadedExecutor()
+        executor.add_node(self.publishCommandDurationObject)
+        # Loop until shutdown is requested
+        while rclpy.ok():
+            try:
+                executor.spin_once(timeout_sec=0.1)
+            except ExternalShutdownException:
+                # Clean shutdown requested: exit loop
+                break
 
     def pwm(self, pwm_set: List[int], scale: float = 1.0) -> None:
         """

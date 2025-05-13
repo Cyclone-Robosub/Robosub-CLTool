@@ -2,7 +2,7 @@ import pytest
 import rclpy
 from pwm_cltool.pwm_publisher import Pwm_Publisher
 
-@pytest.fixture(scope='session', autouse=True)
+@pytest.fixture(scope='session')
 def ros_init_and_shutdown():
     """
     Initialize rclpy once for the whole test session,

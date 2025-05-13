@@ -12,10 +12,10 @@ class TestPwmPublisher:
     def test_node_instantiation(self, pwm_node):
         # Ensure all publishers exist and have correct interface
         pubs = {
-            'commandPublisher': (Int32MultiArray, '/array_Cltool_topic'),
-            'durationPublisher': (Int64,           '/duration_Cltool_topic'),
-            'ManualToggleSwitch': (Bool,           '/manual_toggle_switch'),
-            'ManualOverride': (Bool,               '/manualOverride'),
+            "commandPublisher": (Int32MultiArray, "/array_Cltool_topic"),
+            "durationPublisher": (Int64, "/duration_Cltool_topic"),
+            "ManualToggleSwitch": (Bool, "/manual_toggle_switch"),
+            "ManualOverride": (Bool, "/manualOverride"),
         }
 
         for attr, (msg_type, topic) in pubs.items():
@@ -38,7 +38,7 @@ class TestPwmPublisher:
             msg_type,
             getattr(pwm_node, topic_attr).topic_name,
             lambda msg: received.append(msg),
-            10
+            10,
         )
 
         # call the method under test
@@ -54,10 +54,10 @@ class TestPwmPublisher:
         pwm_node.destroy_subscription(sub)
 
     @pytest.mark.parametrize(
-        'value, msg_type, topic_attr',
+        "value, msg_type, topic_attr",
         [
-            (42,    Int64, 'durationPublisher'),
-        ]
+            (42, Int64, "durationPublisher"),
+        ],
     )
     def test_publish_duration(self, pwm_node, value, msg_type, topic_attr):
         received = []
@@ -65,7 +65,7 @@ class TestPwmPublisher:
             msg_type,
             getattr(pwm_node, topic_attr).topic_name,
             lambda msg: received.append(msg),
-            10
+            10,
         )
 
         pwm_node.publish_duration(value)
@@ -78,11 +78,11 @@ class TestPwmPublisher:
         pwm_node.destroy_subscription(sub)
 
     @pytest.mark.parametrize(
-        'flag, topic_attr',
+        "flag, topic_attr",
         [
-            (True,  'ManualToggleSwitch'),
-            (False, 'ManualToggleSwitch'),
-        ]
+            (True, "ManualToggleSwitch"),
+            (False, "ManualToggleSwitch"),
+        ],
     )
     def test_publish_manual_switch(self, pwm_node, flag, topic_attr):
         received = []
@@ -90,7 +90,7 @@ class TestPwmPublisher:
             Bool,
             getattr(pwm_node, topic_attr).topic_name,
             lambda msg: received.append(msg),
-            10
+            10,
         )
 
         pwm_node.publish_manual_switch(flag)
@@ -115,7 +115,7 @@ class TestPwmPublisher:
             Bool,
             getattr(pwm_node, topic_attr).topic_name,
             lambda msg: received.append(msg),
-            10
+            10,
         )
 
         pwm_node.publish_manual_override(flag)

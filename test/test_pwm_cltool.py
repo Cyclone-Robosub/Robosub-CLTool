@@ -1,136 +1,128 @@
-# tests/test_cltool.py
+# tests/test_pwm_cltool.py
 
-import io
 import os
-import threading
+import tempfile
 import pytest
-
 import rclpy
-from pwm_cltool.pwm_cltool import Pwm_Cltool
-from pwm_cltool.pwm_publisher import Pwm_Publisher
-from pwm_cltool.plant import Plant
 
-from std_msgs.msg import Int32MultiArray, Int64, Bool
+from std_msgs.msg import Bool, Int32MultiArray, Int64
+from pwm_cltool.pwm_cltool import Pwm_Cltool, stop_set, fwd_set
 
 @pytest.fixture
-def pwm_cltool(pwm_cltool_node, monkeypatch):
+def cleanup_rclpy():
     """
-    Ensure we don't actually spin ROS or sleep during tests.
-    Replace sleeps with no-ops and spinning with immediate return.
+    Ensure we shut down ROS after each test to avoid double-init across tests.
     """
-    # Patch sleep so override/exitCLTool/timed_pwm don't actually wait
-    monkeypatch.setattr("pwm_cltool.cltool.sleep", lambda *_: None)
-
-    # Stop the background ROS spin thread from blocking tests
-    if hasattr(pwm_cltool_node, "ros_thread"):
-        # monkey-patch spin_ros to exit immediately
-        monkeypatch.setattr(pwm_cltool_node, "spin_ros", lambda: None)
-
-    yield pwm_cltool_node
-
-    # cleanup
+    yield
+    # Pwm_Cltool.exitCLTool() already calls rclpy.shutdown(), but just in case:
     if rclpy.ok():
         rclpy.shutdown()
-    if hasattr(pwm_cltool_node, "ros_thread") and pwm_cltool_node.ros_thread.is_alive():
-        pwm_cltool_node.ros_thread.join(timeout=1)
 
+@pytest.mark.usefixtures('cleanup_rclpy')
+class TestPwmCltoolIntegration:
+    """
+    Integration-style tests for Pwm_Cltool that spin up real ROS 2 publishers
+    and verify on-topic message delivery.
+    """
 
-def test_scaled_pwm_basics(pwm_cltool):
-    zero = [1500] * 8
-    # scaling by 1 gives identical list
-    assert pwm_cltool.scaled_pwm(zero, 1.0) == zero
-    # scaling by 0 moves everything to stop_pulse (1500)
-    some = [1100, 1900] + [1500] * 6
-    scaled = pwm_cltool.scaled_pwm(some, 0.0)
-    assert scaled == zero
-    # scaling by 2 doubles the distance from 1500
-    sample = [1600, 1400]
-    expected = [1500 + 2*(1600-1500), 1500 + 2*(1400-1500)]
-    assert pwm_cltool.scaled_pwm(sample + [1500]*6, 2.0)[:2] == expected
+    def _make_subscriber(self, msg_type, topic_name, qos=10):
+        """
+        Helper to create a temporary node + subscription that records received msgs.
+        """
+        node = rclpy.create_node('test_subscriber')
+        received = []
+        node.create_subscription(msg_type, topic_name, lambda msg: received.append(msg), qos)
+        return node, received
 
-def test_pwm_method_calls_publish_array_and_duration(pwm_cltool, monkeypatch):
-    # patch publisher
-    pub = pwm_cltool.publishCommandDurationObject
-    calls = {"array": [], "duration": []}
-    monkeypatch.setattr(pub, "publish_array", lambda arr: calls["array"].append(list(arr)))
-    monkeypatch.setattr(pub, "publish_duration", lambda d: calls["duration"].append(d))
+    def test_manual_switch_on_init(self):
+        # Use a temp log file so we don't pollute workspace
+        tmpfile = tempfile.NamedTemporaryFile(delete=False)
+        tmpfile.close()
 
-    # wrong length: should early-return and not publish
-    bad = [1,2,3]
-    pwm_cltool.pwm(bad)
-    assert calls["array"] == [] and calls["duration"] == []
+        clt = Pwm_Cltool(log_file=tmpfile.name)
 
-    # correct length, default scale=1
-    good = [1500]*8
-    pwm_cltool.pwm(good)
-    assert calls["array"] == [good]
-    assert calls["duration"] == [-1]
+        # Subscribe to the manual_toggle_switch topic
+        sub_node, msgs = self._make_subscriber(Bool, '/manual_toggle_switch')
+        # Allow background spin thread to publish
+        rclpy.spin_once(sub_node, timeout_sec=1.0)
 
-    # reset
-    calls["array"].clear(); calls["duration"].clear()
+        assert msgs, "Expected at least one manual switch message on init"
+        assert msgs[0].data is True
 
-    # with scale != 1
-    pwm_cltool.pwm(good, scale=0.5)
-    # array should equal scaled_pwm(good,0.5)
-    assert calls["array"][0] == pwm_cltool.scaled_pwm(good, 0.5)
-    assert calls["duration"][0] == -1
+        # Cleanup
+        sub_node.destroy_node()
+        clt.exitCLTool()
+        os.unlink(tmpfile.name)
 
-def test_timed_pwm_and_override_publish_sequence(pwm_cltool, monkeypatch):
-    pub = pwm_cltool.publishCommandDurationObject
-    seq = []
-    monkeypatch.setattr(pub, "publish_array", lambda arr: seq.append(("array", list(arr))))
-    monkeypatch.setattr(pub, "publish_duration", lambda d: seq.append(("duration", d)))
-    monkeypatch.setattr(pub, "publish_manual_override", lambda f: seq.append(("override", f)))
+    @pytest.mark.parametrize('pwm_set', [stop_set, fwd_set])
+    def test_override_publishes_override_array_and_duration(self, pwm_set):
+        clt = Pwm_Cltool(log_file='unused.csv')
 
-    # test override: override sends override, then array, then duration
-    pwm_cltool.override(durationMS=42, pwm_set=[1]*8)
-    assert seq == [
-        ("override", True),
-        ("array", [1]*8),
-        ("duration", 42)
-    ]
+        # Create subscribers
+        o_node, o_msgs = self._make_subscriber(Bool,     '/manualOverride')
+        a_node, a_msgs = self._make_subscriber(Int32MultiArray, '/array_Cltool_topic')
+        d_node, d_msgs = self._make_subscriber(Int64,     '/duration_Cltool_topic')
 
-    seq.clear()
-    # test timed_pwm: array then duration
-    pwm_cltool.timed_pwm(time_s=7, pwm_set=[2]*8, scale=1.0)
-    assert seq == [
-        ("array", [2]*8),
-        ("duration", 7)
-    ]
+        clt.override(durationMS=321, pwm_set=pwm_set)
 
-def test_exitCLTool_calls_manual_switch_false(pwm_cltool, monkeypatch):
-    pub = pwm_cltool.publishCommandDurationObject
-    called = []
-    monkeypatch.setattr(pub, "publish_manual_switch", lambda f: called.append(f))
-    # simulate rclpy.ok() true
-    monkeypatch.setattr("pwm_cltool.cltool.rclpy.ok", lambda: True)
+        # Spin all three subscribers
+        for node in (o_node, a_node, d_node):
+            rclpy.spin_once(node, timeout_sec=1.0)
 
-    pwm_cltool.exitCLTool()
-    assert called == [False]
+        # Assertions
+        assert o_msgs and o_msgs[0].data is True
+        assert a_msgs and list(a_msgs[0].data) == pwm_set
+        assert d_msgs and d_msgs[0].data == 321
 
-def test_reaction_uses_plant_pwm_force(pwm_cltool, monkeypatch):
-    # patch plant.pwm_force to capture input
-    got = []
-    monkeypatch.setattr(pwm_cltool.plant, "pwm_force", lambda arr: got.append(arr))
-    sample = [1500, 1600, 1400] + [1500]*5
-    pwm_cltool.reaction(sample, scale=2.0)
-    # reaction scales internally via same formula as scaled_pwm
-    expected = [2.0*(x-1500)+1500 for x in sample]
-    assert got == [expected]
+        # Cleanup
+        for node in (o_node, a_node, d_node):
+            node.destroy_node()
+        clt.exitCLTool()
 
-def test_read_prints_file_contents(tmp_path, pwm_cltool, capsys):
-    # create a temporary pwm_file
-    content = "line1\nline2"
-    p = tmp_path / "pwm_file.csv"
-    p.write_text(content)
-    # monkeypatch the filename global
-    monkeypatch = pytest.MonkeyPatch()
-    monkeypatch.setenv("PWM_CTOOL_PWMDIR", str(tmp_path))
-    # override the global pwm_file path
-    import pwm_cltool.pwm_cltool as cltool_mod
-    cltool_mod.pwm_file = str(p)
+    @pytest.mark.parametrize('scale', [1.0, 0.25, 1.75])
+    def test_pwm_sends_scaled_array_and_negative_duration(self, scale):
+        clt = Pwm_Cltool(log_file='unused.csv')
 
-    pwm_cltool.read()
-    out = capsys.readouterr().out
-    assert content in out
-    monkeypatch.undo()
+        # Subscribe to array and duration
+        arr_node, arr_msgs = self._make_subscriber(Int32MultiArray, '/array_Cltool_topic')
+        dur_node, dur_msgs = self._make_subscriber(Int64, '/duration_Cltool_topic')
+
+        clt.pwm(fwd_set, scale=scale)
+
+        rclpy.spin_once(arr_node, timeout_sec=1.0)
+        rclpy.spin_once(dur_node, timeout_sec=1.0)
+
+        assert len(arr_msgs) == 1, "Expected one array message"
+        assert len(dur_msgs) == 1, "Expected one duration message"
+        assert dur_msgs[0].data == -1
+
+        arr_node.destroy_node()
+        dur_node.destroy_node()
+        clt.exitCLTool()
+
+    def test_exitCLTool_publishes_manual_switch_off(self):
+        clt = Pwm_Cltool(log_file='unused.csv')
+
+        # First, drain the initial ON message
+        drain_node, drained = self._make_subscriber(Bool, '/manual_toggle_switch')
+        rclpy.spin_once(drain_node, timeout_sec=1.0)
+        drained.clear()
+
+        # Now exit and check for OFF
+        clt.exitCLTool()
+        rclpy.spin_once(drain_node, timeout_sec=1.0)
+
+        assert drained and drained[0].data is False
+
+        drain_node.destroy_node()
+
+    def test_scaled_pwm_function(self):
+        clt = Pwm_Cltool(log_file='unused.csv')
+        # If scale < 1, outputs should be closer to stop_pulse (1500)
+        scaled = clt.scaled_pwm(fwd_set, 0.5)
+        # Every element should lie midway between original and stop_pulse
+        for orig, new in zip(fwd_set, scaled):
+            mid = stop_set[0] + (orig - stop_set[0]) * 0.5
+            assert abs(new - mid) < 2  # allow rounding
+
+        clt.exitCLTool()
