@@ -9,6 +9,9 @@ from time import sleep
 from typing import List
 import code
 
+import readline
+import rlcompleter
+
 # Define the CLTool Globals
 rev_pulse: int = 1100
 stop_pulse: int = 1500
@@ -83,14 +86,8 @@ class Pwm_Cltool:
         print("Please type clt.exitCLTool() to safely exit manual control.\n")
 
     def start_console(self):
-        # Launch an interactive console with `tcs` in the namespace
-        banner = (
-            "Interactive Thrust_Control Console\n"
-            "Available object: clt (Pwm_Cltool instance)\n"
-            "Type 'shutdown' to cleanly exit, or use exit()/Ctrl-D.\n"
-        )
-        console = code.InteractiveConsole(
-            locals={
+        
+        locals = {
                 "clt": self,
                 "stop_set": stop_set,
                 "fwd_set": fwd_set,
@@ -101,7 +98,20 @@ class Pwm_Cltool:
                 "summer": summer,
                 "spin_set": spin_set,
                 "torpedo": torpedo,
-            }
+        }
+                                                    
+        readline.set_completer(rlcompleter.Completer(locals).complete)
+        readline.parse_and_bind("tab: complete")
+        code.InteractiveConsole(locals).interact()
+        
+        # Launch an interactive console with `tcs` in the namespace
+        banner = (
+            "Interactive Thrust_Control Console\n"
+            "Available object: clt (Pwm_Cltool instance)\n"
+            "Type 'shutdown' to cleanly exit, or use exit()/Ctrl-D.\n"
+        )
+        console = code.InteractiveConsole(
+            locals = locals
         )
         console.interact(banner=banner, exitmsg="Console exiting, shutting down...")
 
