@@ -114,9 +114,14 @@ class Pwm_Cltool:
             pwm_set (List[int]): PWM values to apply to thrusters during override.
         """
         self.publishCommandDurationObject.publish_manual_override(True)
+        if durationMS < 0:
+            is_timed = False
+        else:
+            is_timed = True
+            
         sleep(0.2)
-        self.publishCommandDurationObject.publish_array(pwm_set)
-        self.publishCommandDurationObject.publish_duration(durationMS)
+        
+        self.publishCommandDurationObject.publish_pwm_cmd(pwm_set, is_timed, durationMS)
 
     def exitCLTool(self) -> None:
         """
@@ -154,8 +159,7 @@ class Pwm_Cltool:
             return
         print("pwm function executed.")
         pwm_set = [int(i) for i in pwm_set]
-        self.publishCommandDurationObject.publish_array(pwm_set)
-        self.publishCommandDurationObject.publish_duration(-1)
+        self.publishCommandDurationObject.publish_pwm_cmd(pwm_set, False, -1)
 
     def scaled_pwm(self, pwm_set: List[int], scale: float) -> List[int]:
         """
@@ -183,8 +187,7 @@ class Pwm_Cltool:
         if scale != 1:
             pwm_set = self.scaled_pwm(pwm_set, scale)
         print("Executing timed_pwm...")
-        self.publishCommandDurationObject.publish_array(pwm_set)
-        self.publishCommandDurationObject.publish_duration(time_s)
+        self.publishCommandDurationObject.publish_pwm_cmd(pwm_set, True, time_s)
 
     def read(self) -> None:
         """

@@ -3,6 +3,8 @@ from rclpy.node import Node
 from rclpy.publisher import Publisher
 from typing import List
 
+from crs_ros2_interfaces.msg import PwmCmd
+
 class Pwm_Publisher(Node):
     """
     ROS 2 Node for publishing PWM control and override signals to various topics.
@@ -25,10 +27,7 @@ class Pwm_Publisher(Node):
         """
         super().__init__("python_cltool_node")
         self.commandPublisher: Publisher = self.create_publisher(
-            Int32MultiArray, "array_Cltool_topic", 10
-        )
-        self.durationPublisher: Publisher = self.create_publisher(
-            Int64, "duration_Cltool_topic", 10
+            PwmCmd, "array_Cltool_topic", 10
         )
         self.ManualToggleSwitch: Publisher = self.create_publisher(
             Bool, "manual_toggle_switch", 3
@@ -37,29 +36,42 @@ class Pwm_Publisher(Node):
             Bool, "manualOverride", 4
         )
 
-    def publish_array(self, pwm_array: List[int]) -> None:
+    def publish_pwm_cmd(self, pwm_array: List[int], is_timed: bool, pwm_duration: int) -> None:
         """
         Publishes a list of PWM values to the 'array_Cltool_topic'.
 
         Args:
             pwm_array (List[int]): List of PWM values (typically 8 elements for 8 thrusters).
         """
-        msg = Int32MultiArray()
-        msg.data = pwm_array
+        msg = PwmCmd()
+        
+        msg.pwm_flt = pwm_array[0]
+        msg.pwm_frt = pwm_array[1]
+        msg.pwm_rlt = pwm_array[2]
+        msg.pwm_rrt = pwm_array[3]
+        msg.pwm_flb = pwm_array[4]
+        msg.pwm_frb = pwm_array[5]
+        msg.pwm_rlb = pwm_array[6]
+        msg.pwm_rrb = pwm_array[7]
+        
+        msg.is_timed = is_timed
+        
+        msg.duration = pwm_duration
+        
         self.commandPublisher.publish(msg)
-        print(msg.data)
-
-    def publish_duration(self, durationSec: int) -> None:
-        """
-        Publishes the command duration to the 'duration_Cltool_topic'.
-
-        Args:
-            durationSec (int): Duration in seconds for which the PWM command should be applied.
-        """
-        msg = Int64()
-        msg.data = durationSec
-        self.durationPublisher.publish(msg)
-        print(msg.data)
+        
+        print(
+            f"pwm_flt = {msg.pwm_flt}\n"
+            f"pwm_frt = {msg.pwm_frt}\n"
+            f"pwm_rlt = {msg.pwm_rlt}\n"
+            f"pwm_rrt = {msg.pwm_rrt}\n"
+            f"pwm_flb = {msg.pwm_flb}\n"
+            f"pwm_frb = {msg.pwm_frb}\n"
+            f"pwm_rlb = {msg.pwm_rlb}\n"
+            f"pwm_rrb = {msg.pwm_rrb}"
+        )
+        print(f"is_timed = {msg.is_timed}")
+        print(f"duration = {msg.duration}")
 
     def publish_manual_switch(self, isManualEnabled: bool) -> None:
         """
