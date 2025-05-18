@@ -8,6 +8,8 @@ from .plant import Plant
 from time import sleep
 from typing import List
 import code
+import readline
+import rlcompleter
 
 # Define the CLTool Globals
 rev_pulse: int = 1100
@@ -84,6 +86,7 @@ class Pwm_Cltool:
 
     def start_console(self):
         # Launch an interactive console with `tcs` in the namespace
+        readline.parse_and_bind("tab: complete")
         banner = (
             "Interactive Thrust_Control Console\n"
             "Available object: clt (Pwm_Cltool instance)\n"
