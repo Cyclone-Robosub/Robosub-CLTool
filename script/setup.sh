@@ -1,1 +1,1 @@
-git submoudule update --init --remote
+git submodule update --init --remote
