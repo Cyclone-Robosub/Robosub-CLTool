@@ -27,7 +27,7 @@ class Pwm_Publisher(Node):
         """
         super().__init__("python_cltool_node")
         self.commandPublisher: Publisher = self.create_publisher(
-            PwmCmd, "array_Cltool_topic", 10
+            PwmCmd, "pwm_cmd_topic", 10
         )
         self.ManualToggleSwitch: Publisher = self.create_publisher(
             Bool, "manual_toggle_switch", 3
