@@ -9,6 +9,9 @@ from time import sleep
 from typing import List
 import code
 
+import readline
+import rlcompleter
+
 # Define the CLTool Globals
 rev_pulse: int = 1100
 stop_pulse: int = 1500
@@ -83,14 +86,8 @@ class Pwm_Cltool:
         print("Please type clt.exitCLTool() to safely exit manual control.\n")
 
     def start_console(self):
-        # Launch an interactive console with `tcs` in the namespace
-        banner = (
-            "Interactive Thrust_Control Console\n"
-            "Available object: clt (Pwm_Cltool instance)\n"
-            "Type 'shutdown' to cleanly exit, or use exit()/Ctrl-D.\n"
-        )
-        console = code.InteractiveConsole(
-            locals={
+        
+        locals = {
                 "clt": self,
                 "stop_set": stop_set,
                 "fwd_set": fwd_set,
@@ -101,7 +98,20 @@ class Pwm_Cltool:
                 "summer": summer,
                 "spin_set": spin_set,
                 "torpedo": torpedo,
-            }
+        }
+                                                    
+        readline.set_completer(rlcompleter.Completer(locals).complete)
+        readline.parse_and_bind("tab: complete")
+        code.InteractiveConsole(locals).interact()
+        
+        # Launch an interactive console with `tcs` in the namespace
+        banner = (
+            "Interactive Thrust_Control Console\n"
+            "Available object: clt (Pwm_Cltool instance)\n"
+            "Type 'shutdown' to cleanly exit, or use exit()/Ctrl-D.\n"
+        )
+        console = code.InteractiveConsole(
+            locals = locals
         )
         console.interact(banner=banner, exitmsg="Console exiting, shutting down...")
 
@@ -114,9 +124,14 @@ class Pwm_Cltool:
             pwm_set (List[int]): PWM values to apply to thrusters during override.
         """
         self.publishCommandDurationObject.publish_manual_override(True)
+        if durationMS < 0:
+            is_timed = False
+        else:
+            is_timed = True
+            
         sleep(0.2)
-        self.publishCommandDurationObject.publish_array(pwm_set)
-        self.publishCommandDurationObject.publish_duration(durationMS)
+        
+        self.publishCommandDurationObject.publish_pwm_cmd(pwm_set, is_timed, durationMS)
 
     def exitCLTool(self) -> None:
         """
@@ -154,8 +169,7 @@ class Pwm_Cltool:
             return
         print("pwm function executed.")
         pwm_set = [int(i) for i in pwm_set]
-        self.publishCommandDurationObject.publish_array(pwm_set)
-        self.publishCommandDurationObject.publish_duration(-1)
+        self.publishCommandDurationObject.publish_pwm_cmd(pwm_set, False, -1)
 
     def scaled_pwm(self, pwm_set: List[int], scale: float) -> List[int]:
         """
@@ -183,8 +197,7 @@ class Pwm_Cltool:
         if scale != 1:
             pwm_set = self.scaled_pwm(pwm_set, scale)
         print("Executing timed_pwm...")
-        self.publishCommandDurationObject.publish_array(pwm_set)
-        self.publishCommandDurationObject.publish_duration(time_s)
+        self.publishCommandDurationObject.publish_pwm_cmd(pwm_set, True, time_s)
 
     def read(self) -> None:
         """

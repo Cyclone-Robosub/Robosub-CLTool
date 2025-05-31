@@ -1,5 +1,4 @@
 # pwm_cltool/runner.py
-import rclpy
 from pwm_cltool.pwm_cltool import Pwm_Cltool
 
 

@@ -1,0 +1,4 @@
+[submodule "src/crs_common"]
+	path = src/crs_common
+	url = https://github.com/Cyclone-Robosub/crs_common.git
+	branch = main
