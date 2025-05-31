@@ -115,7 +115,7 @@ class Pwm_Cltool:
         )
         console.interact(banner=banner, exitmsg="Console exiting, shutting down...")
 
-    def override(self, durationMS: int = -1, pwm_set: List[int] = stop_set):
+    def override(self, durationMS: float = -1.0, pwm_set: List[int] = stop_set):
         """
         Publishes a manual override command, typically for emergency situations.
 
@@ -124,7 +124,7 @@ class Pwm_Cltool:
             pwm_set (List[int]): PWM values to apply to thrusters during override.
         """
         self.publishCommandDurationObject.publish_manual_override(True)
-        if durationMS < 0:
+        if durationMS < 0.0:
             is_timed = False
         else:
             is_timed = True
@@ -156,7 +156,7 @@ class Pwm_Cltool:
 
     def pwm(self, pwm_set: List[int], scale: float = 1.0) -> None:
         """
-        Sends a scaled or raw PWM command to all thrusters.
+        Sends a scaled or raw PWM command to all thrusters. To send overriding command, use the override command.
 
         Args:
             pwm_set (List[int]): List of PWM values to apply.
