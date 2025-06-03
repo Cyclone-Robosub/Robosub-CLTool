@@ -73,7 +73,7 @@ class Pwm_Cltool:
         Automatically enables manual mode and provides CLI instructions.
         """
         self.plant = Plant()
-        self.thrusters: List[int] = [3, 2, 5, 4, 18, 20, 19, 21]
+        self.thrusters: List[int] = [8, 9, 6, 7, 13, 11, 12, 10]
         rclpy.init()
         self.publishCommandDurationObject = Pwm_Publisher()
         self.ros_thread = threading.Thread(target=self.spin_ros)
