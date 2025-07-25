@@ -36,7 +36,7 @@ class Pwm_Publisher(Node):
             Bool, "manualOverride", 4
         )
 
-    def publish_pwm_cmd(self, pwm_array: List[int], is_timed: bool, pwm_duration: int) -> None:
+    def publish_pwm_cmd(self, pwm_array: List[int], is_timed: bool, pwm_duration: float) -> None:
         """
         Publishes a list of PWM values to the 'array_Cltool_topic'.
 
