@@ -37,6 +37,15 @@ class Pwm_Publisher(Node):
         self.ManualOverride: Publisher = self.create_publisher(
             Bool, "manualOverride", 4
         )
+        self.PositionPublisher: Publisher = self.create_publisher(
+            Int32MultiArray, "position_topic", 10
+        )
+        self.WaypointPublisher: Publisher = self.create_publisher(
+            Int32MultiArray, "waypoint_topic", 10
+        )
+        self.ControlModePublisher: Publisher = self.create_publisher(
+            String, "waypoint_topic", 10
+        )
 
     def publish_pwm_cmd(self, pwm_array: List[int], is_timed: bool, pwm_duration: float) -> None:
         """
@@ -74,6 +83,11 @@ class Pwm_Publisher(Node):
         msg.data = isManualEnabled
         self.ManualToggleSwitch.publish(msg)
 
+        if isManualEnabled:
+            self.publish_control_mode("FeedForward")
+        else:
+            self.publish_control_mode("PID")
+
     def publish_manual_override(self, isMistakeMade: bool) -> None:
         """
         Publishes a manual override signal, typically used for emergency stops or correction.
@@ -84,4 +98,40 @@ class Pwm_Publisher(Node):
         msg = Bool()
         msg.data = isMistakeMade
         self.ManualOverride.publish(msg)
+        print(msg.data)
+
+    def publish_position(self, position: List[int]) -> None:
+        """
+        Publishes a list of positions to the 'position_topic'.
+
+        Args:
+            position (List[int]): List of positions to publish. 
+        """
+        msg = Int32MultiArray()
+        msg.data = position
+        self.PositionPublisher.publish(msg)
+        print(msg.data)
+
+    def publish_waypoint(self, waypoint: List[int]) -> None:
+        """
+        Publishes a list of waypoints to the 'waypoint_topic'.
+
+        Args:
+            waypoint (List[int]): List of waypoints to publish.
+        """
+        msg = Int32MultiArray()
+        msg.data = waypoint
+        self.WaypointPublisher.publish(msg)
+        print(msg.data)
+
+    def publish_control_mode(self, control_mode: str) -> None:
+        """
+        Publishes a control mode to the 'control_mode_topic'.
+
+        Args:
+            control_mode (str): Control mode to publish.
+        """
+        msg = String()
+        msg.data = control_mode
+        self.ControlModePublisher.publish(msg)
         print(msg.data)
