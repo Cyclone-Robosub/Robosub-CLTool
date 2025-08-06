@@ -2,7 +2,7 @@ from typing import List
 
 from rclpy.node import Node
 from rclpy.publisher import Publisher
-from std_msgs.msg import Bool, Int32MultiArray, String
+from std_msgs.msg import Bool, Int32MultiArray, Float32MultiArray, String
 from crs_ros2_interfaces.msg import PwmCmd
 
 
@@ -36,16 +36,16 @@ class Pwm_Publisher(Node):
             Bool, 'manualOverride', 4
         )
         self.PositionPublisher: Publisher = self.create_publisher(
-            Int32MultiArray, 'position_topic', 10
+            Float32MultiArray, 'position_topic', 10
         )
         self.WaypointPublisher: Publisher = self.create_publisher(
-            Int32MultiArray, 'waypoint_topic', 10
+            Float32MultiArray, 'waypoint_topic', 10
         )
         self.ControlModePublisher: Publisher = self.create_publisher(
             String, 'control_mode_topic', 10
         )
 
-    def publish_pwm_cmd(self, pwm_array: List[int], is_timed: bool, pwm_duration: float) -> None:
+    def publish_pwm_cmd(self, pwm_array: List[int], is_timed: bool, pwm_duration: float, is_override: bool) -> None:
         """
         Publish a list of PWM values to the 'array_Cltool_topic'.
 
@@ -55,16 +55,24 @@ class Pwm_Publisher(Node):
             pwm_duration (int): Duration to use the pwm values for. Should be ignored if is_time is true.
         """
         msg = PwmCmd()
-        msg.pwm_array = pwm_array
+        msg.pwm_flt = pwm_array[0]
+        msg.pwm_frt = pwm_array[1]
+        msg.pwm_rlt = pwm_array[2]
+        msg.pwm_rrt = pwm_array[3]
+        msg.pwm_flb = pwm_array[4]
+        msg.pwm_frb = pwm_array[5]
+        msg.pwm_rlb = pwm_array[6]
+        msg.pwm_rrb = pwm_array[7]
         msg.is_timed = is_timed
-        msg.pwm_duration = pwm_duration
+        msg.duration = pwm_duration
+        msg.is_overriding = is_override
 
         self.commandPublisher.publish(msg)
 
         # Print the published message for debugging
-        print(f'Published PWM array: {msg.pwm_array}')
-        print(f'Is timed: {msg.is_timed}')
-        print(f'Duration: {msg.pwm_duration}')
+        print(f'Published PWM array: {pwm_array}')
+        print(f'Is timed: {is_timed}')
+        print(f'Duration: {pwm_duration}')
 
     def publish_manual_switch(self, isManualEnabled: bool) -> None:
         """

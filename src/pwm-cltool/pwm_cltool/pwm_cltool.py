@@ -169,7 +169,7 @@ class Pwm_Cltool:
             return
         print("pwm function executed.")
         pwm_set = [int(i) for i in pwm_set]
-        self.publishCommandDurationObject.publish_pwm_cmd(pwm_set, False, -1)
+        self.publishCommandDurationObject.publish_pwm_cmd(pwm_set, False, -1, False)
 
     def scaled_pwm(self, pwm_set: List[int], scale: float) -> List[int]:
         """
@@ -243,6 +243,18 @@ class Pwm_Cltool:
             return
         print(f'Executing position {position}')
         self.publishCommandDurationObject.publish_position(position)
+
+    def pid(self) -> None:
+        """
+        Sets control mode to PID
+        """
+        self.publishCommandDurationObject.publish_control_mode('PID')
+
+    def manual(self) -> None:
+        """
+        Sets control mode to manual
+        """
+        self.publishCommandDurationObject.publish_control_mode('feed-forward')
 
 
 
