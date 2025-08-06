@@ -2,6 +2,3 @@
 	path = src/crs_common
 	url = https://github.com/Cyclone-Robosub/crs_common.git
 	branch = main
-[submodule "include/Thrust-Control"]
-	path = include/Thrust-Control
-	url = https://github.com/Cyclone-Robosub/Thrust-Control.git
