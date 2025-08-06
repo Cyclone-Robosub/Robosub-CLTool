@@ -196,20 +196,18 @@ class Pwm_Cltool:
         """
         if scale != 1:
             pwm_set = self.scaled_pwm(pwm_set, scale)
-        print("Executing timed_pwm...")
+        print('Executing timed_pwm...')
         self.publishCommandDurationObject.publish_pwm_cmd(pwm_set, True, time_s)
 
     def read(self) -> None:
-        """
-        Reads and prints the contents of the PWM command log file.
-        """
-        with open(self.logFile, "r") as logf:
+        """Read and print the contents of the PWM command log file."""
+        with open(self.logFile, 'r') as logf:
             file_contents = logf.read()
             print(file_contents)
 
     def reaction(self, pwm_set: List[int], scale: float = 1.0) -> None:
         """
-        Sends scaled PWM values to the plant model for reaction force estimation.
+        Send scaled PWM values to the plant model for reaction force estimation.
 
         Args:
             pwm_set (List[int]): PWM command values.
@@ -217,3 +215,34 @@ class Pwm_Cltool:
         """
         pwm = [scale * (i - stop_pulse) + stop_pulse for i in pwm_set]
         self.plant.pwm_force(pwm)
+
+
+    def waypoint(self, waypoint: List[int]) -> None:
+        """
+        Sends a waypoint over ROS
+
+        Args:
+            waypoint (List[int]): A list of 6 integers representing the waypoint.
+        """
+        if len(waypoint) != 6:
+            print("Wrong length for waypoint\n")
+            return
+        print(f'Executing waypoint {waypoint}')
+        self.publishCommandDurationObject.publish_waypoint(waypoint)
+
+    def position(self, position: List[float]) -> None:
+        """
+        Sends a position over ROS
+
+        Args:
+            position (List[float]): A list of 6 floats representing the position.
+            world frame: x, y, z, roll, pitch, yaw, in meters and radians
+        """
+        if len(position) != 6:
+            print("Wrong length for position\n")
+            return
+        print(f'Executing position {position}')
+        self.publishCommandDurationObject.publish_position(position)
+
+
+
