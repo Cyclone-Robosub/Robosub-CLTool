@@ -197,7 +197,7 @@ class Pwm_Cltool:
         if scale != 1:
             pwm_set = self.scaled_pwm(pwm_set, scale)
         print('Executing timed_pwm...')
-        self.publishCommandDurationObject.publish_pwm_cmd(pwm_set, True, time_s)
+        self.publishCommandDurationObject.publish_pwm_cmd(pwm_set, True, time_s, False)
 
     def read(self) -> None:
         """Read and print the contents of the PWM command log file."""

@@ -111,25 +111,68 @@ def test_untimed_pwm_function(cl_tool_test_node):
     assert node.received_pwm_duration == -1
     assert node.received_is_overriding is False
 
-#
-#def test_timed_pwm_function(cl_tool_test_node):
-#    test_data = cl_tool_test_node
-#    node = test_data['test_node']
-#    executor = test_data['executor']
-#    Cltool = test_data['Cltool']
-#
-#    Cltool.timed_pwm(1000, fwd_set)
-#    rclpy.spin_once(node, timeout_sec=1.0)
-#    assert node.received_pwm_data == fwd_set
-#    assert node.received_is_timed is True
-#    assert node.received_pwm_duration == 1000
-#    assert node.received_is_overriding is False
 
+def test_timed_pwm_function(cl_tool_test_node):
+    test_data = cl_tool_test_node
+    node = test_data['test_node']
+    executor = test_data['executor']
+    Cltool = test_data['Cltool']
+
+    Cltool.timed_pwm(1000, fwd_set)
+    rclpy.spin_once(node, timeout_sec=1.0)
+    assert node.received_pwm_data == fwd_set
+    assert node.received_is_timed is True
+    assert node.received_pwm_duration == 1000
+    assert node.received_is_overriding is False
+
+
+def test_waypoint_function(cl_tool_test_node):
+    test_data = cl_tool_test_node
+    node = test_data['test_node']
+    executor = test_data['executor']
+    Cltool = test_data['Cltool']
     
+    waypoint = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0]
+    Cltool.waypoint(waypoint)
+    rclpy.spin_once(node, timeout_sec=1.0)
+    assert node.received_waypoint == pytest.approx(waypoint), ...
+    f"Received waypoint: {node.received_waypoint}\n"
+    f"Expected waypoint: {waypoint}\n"
 
 
+def test_position_function(cl_tool_test_node):
+    test_data = cl_tool_test_node
+    node = test_data['test_node']
+    executor = test_data['executor']
+    Cltool = test_data['Cltool']
 
+    position = [6.0, 5.0, 4.0, 3.0, 2.0, 1.0]
+    Cltool.position(position)
+    rclpy.spin_once(node, timeout_sec=1.0)
+    assert node.received_position == pytest.approx(position), ...
+    f"Received position: {node.received_position}\n"
+    f"Expected position: {position}\n"
+    
+def test_pid_function(cl_tool_test_node):
+    test_data = cl_tool_test_node
+    node = test_data['test_node']
+    executor = test_data['executor']
+    Cltool = test_data['Cltool']
 
+    Cltool.pid()
+    rclpy.spin_once(node, timeout_sec=1.0)
+    assert node.received_control_mode == 'PID', f"Received control mode: {node.received_control_mode}\nExpected control mode: PID\n"
+
+def test_manual_function(cl_tool_test_node):
+    test_data = cl_tool_test_node
+    node = test_data['test_node']
+    executor = test_data['executor']
+    Cltool = test_data['Cltool']
+
+    Cltool.manual()
+    rclpy.spin_once(node, timeout_sec=1.0)
+    assert node.received_control_mode == 'feed-forward', ...
+    f"Received control mode: {node.received_control_mode}\nExpected control mode: feed-forward\n"
 
 #@pytest.fixture
 #def cleanup_rclpy():
