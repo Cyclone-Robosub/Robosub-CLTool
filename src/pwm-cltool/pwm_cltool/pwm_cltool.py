@@ -217,12 +217,12 @@ class Pwm_Cltool:
         self.plant.pwm_force(pwm)
 
 
-    def waypoint(self, waypoint: List[int]) -> None:
+    def waypoint(self, waypoint: List[float]) -> None:
         """
         Sends a waypoint over ROS
 
         Args:
-            waypoint (List[int]): A list of 6 integers representing the waypoint.
+            waypoint (List[float]): A list of 6 floats representing the waypoint.
         """
         if len(waypoint) != 6:
             print("Wrong length for waypoint\n")

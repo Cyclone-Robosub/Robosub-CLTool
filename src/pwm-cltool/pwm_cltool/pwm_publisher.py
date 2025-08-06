@@ -99,27 +99,27 @@ class Pwm_Publisher(Node):
         else:
             print('Manual override cleared')
 
-    def publish_position(self, position: List[int]) -> None:
+    def publish_position(self, position: List[float]) -> None:
         """
         Publish a list of positions to the 'position_topic'.
 
         Args:
-            position (List[int]): List of positions to publish.
+            position (List[float]): List of positions to publish.
         """
         assert len(position) == 6
-        msg = Int32MultiArray()
+        msg = Float32MultiArray()
         msg.data = position
         self.PositionPublisher.publish(msg)
 
-    def publish_waypoint(self, waypoint: List[int]) -> None:
+    def publish_waypoint(self, waypoint: List[float]) -> None:
         """
         Publish a list of waypoints to the 'waypoint_topic'.
 
         Args:
-            waypoint (List[int]): List of waypoints to publish.
+            waypoint (List[float]): List of waypoints to publish.
         """
         assert len(waypoint) == 6
-        msg = Int32MultiArray()
+        msg = Float32MultiArray()
         msg.data = waypoint
         self.WaypointPublisher.publish(msg)
 
