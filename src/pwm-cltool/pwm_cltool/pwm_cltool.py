@@ -254,7 +254,7 @@ class Pwm_Cltool:
         """
         Sets control mode to manual
         """
-        self.publishCommandDurationObject.publish_control_mode('feed-forward')
+        self.publishCommandDurationObject.publish_control_mode('FeedForward')
 
 
 
