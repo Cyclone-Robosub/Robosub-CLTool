@@ -171,8 +171,7 @@ def test_manual_function(cl_tool_test_node):
 
     Cltool.manual()
     rclpy.spin_once(node, timeout_sec=1.0)
-    assert node.received_control_mode == 'feed-forward', ...
-    f"Received control mode: {node.received_control_mode}\nExpected control mode: feed-forward\n"
+    assert node.received_control_mode == 'FeedForward', f"Received control mode: {node.received_control_mode}\nExpected control mode: feed-forward\n"
 
 #@pytest.fixture
 #def cleanup_rclpy():
