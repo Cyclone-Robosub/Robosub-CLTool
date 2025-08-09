@@ -22,6 +22,19 @@ fwd_pulse: int = int(fwd_pulse_raw * rev_adj)
 zero_set: List[int] = [0 for _ in range(8)]
 stop_set: List[int] = [stop_pulse for _ in range(8)]
 
+test_sets = [
+    [1400, 0, 0, 0, 0, 0, 0, 0],
+    [0, 1400, 0, 0, 0, 0, 0, 0],
+    [0, 0, 1400, 0, 0, 0, 0, 0],
+    [0, 0, 0, 1400, 0, 0, 0, 0],
+    [0, 0, 0, 0, 1400, 0, 0, 0],
+    [0, 0, 0, 0, 0, 1400, 0, 0],
+    [0, 0, 0, 0, 0, 0, 1400, 0],
+    [0, 0, 0, 0, 0, 0, 0, 1400]
+]
+
+
+
 fwd_set: List[int] = [stop_pulse for _ in range(4)] + [
     fwd_pulse,
     rev_pulse,
