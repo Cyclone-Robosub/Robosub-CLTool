@@ -106,7 +106,6 @@ class Pwm_Cltool:
                 "fwd_set": fwd_set,
                 "crab_set": crab_set,
                 "down_set": down_set,
-                "test_set": test_set,
                 "test_sets": test_sets,
                 "barrel": barrel,
                 "summer": summer,
@@ -277,7 +276,8 @@ class Pwm_Cltool:
         Args:
             thruster_num (int): The number of the thruster to test.
         """
-        self.timed_pwm(1.0, test_sets[thruster_num])
+        return
+        self.timed_pwm(1.0, stop_set)
 
     def test_all_thrusters(self) -> None:
         """
