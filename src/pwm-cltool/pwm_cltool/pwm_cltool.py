@@ -22,6 +22,11 @@ fwd_pulse: int = int(fwd_pulse_raw * rev_adj)
 zero_set: List[int] = [0 for _ in range(8)]
 stop_set: List[int] = [stop_pulse for _ in range(8)]
 
+test_sets : List[List[int]] = [ [1500 for _ in range(8)] for _ in range(8) ]
+for i in range(8):
+    test_sets[i][i] = 1400
+
+
 fwd_set: List[int] = [stop_pulse for _ in range(4)] + [
     fwd_pulse,
     rev_pulse,
@@ -93,7 +98,7 @@ class Pwm_Cltool:
                 "fwd_set": fwd_set,
                 "crab_set": crab_set,
                 "down_set": down_set,
-                "test_set": test_set,
+                "test_sets": test_sets,
                 "barrel": barrel,
                 "summer": summer,
                 "spin_set": spin_set,
@@ -169,7 +174,7 @@ class Pwm_Cltool:
             return
         print("pwm function executed.")
         pwm_set = [int(i) for i in pwm_set]
-        self.publishCommandDurationObject.publish_pwm_cmd(pwm_set, False, -1)
+        self.publishCommandDurationObject.publish_pwm_cmd(pwm_set, False, -1, False)
 
     def scaled_pwm(self, pwm_set: List[int], scale: float) -> List[int]:
         """
@@ -185,31 +190,29 @@ class Pwm_Cltool:
         new_pwm = [int(scale * (i - stop_pulse) + stop_pulse) for i in pwm_set]
         return new_pwm
 
-    def timed_pwm(self, time_s: int, pwm_set: List[int], scale: float = 1.0) -> None:
+    def timed_pwm(self, time_s: float, pwm_set: List[int], scale: float = 1.0) -> None:
         """
         Sends a PWM command for a fixed duration.
 
         Args:
-            time_s (int): Duration in seconds for which to apply the PWM.
+            time_s (float): Duration in seconds for which to apply the PWM.
             pwm_set (List[int]): PWM values to apply.
             scale (float): Optional scale factor for PWM values.
         """
         if scale != 1:
             pwm_set = self.scaled_pwm(pwm_set, scale)
-        print("Executing timed_pwm...")
-        self.publishCommandDurationObject.publish_pwm_cmd(pwm_set, True, time_s)
+        print('Executing timed_pwm...')
+        self.publishCommandDurationObject.publish_pwm_cmd(pwm_set, True, time_s, False)
 
     def read(self) -> None:
-        """
-        Reads and prints the contents of the PWM command log file.
-        """
-        with open(self.logFile, "r") as logf:
+        """Read and print the contents of the PWM command log file."""
+        with open(self.logFile, 'r') as logf:
             file_contents = logf.read()
             print(file_contents)
 
     def reaction(self, pwm_set: List[int], scale: float = 1.0) -> None:
         """
-        Sends scaled PWM values to the plant model for reaction force estimation.
+        Send scaled PWM values to the plant model for reaction force estimation.
 
         Args:
             pwm_set (List[int]): PWM command values.
@@ -217,3 +220,68 @@ class Pwm_Cltool:
         """
         pwm = [scale * (i - stop_pulse) + stop_pulse for i in pwm_set]
         self.plant.pwm_force(pwm)
+
+
+    def waypoint(self, waypoint: List[float]) -> None:
+        """
+        Sends a waypoint over ROS
+
+        Args:
+            waypoint (List[float]): A list of 6 floats representing the waypoint.
+        """
+        if len(waypoint) != 6:
+            print("Wrong length for waypoint\n")
+            return
+        print(f'Executing waypoint {waypoint}')
+        self.publishCommandDurationObject.publish_waypoint(waypoint)
+
+    def position(self, position: List[float]) -> None:
+        """
+        Sends a position over ROS
+
+        Args:
+            position (List[float]): A list of 6 floats representing the position.
+            world frame: x, y, z, roll, pitch, yaw, in meters and radians
+        """
+        if len(position) != 6:
+            print("Wrong length for position\n")
+            return
+        print(f'Executing position {position}')
+        self.publishCommandDurationObject.publish_position(position)
+
+    def pid(self) -> None:
+        """
+        Sets control mode to PID
+        """
+        self.publishCommandDurationObject.publish_control_mode('PID')
+
+    def manual(self) -> None:
+        """
+        Sets control mode to manual
+        """
+        self.publishCommandDurationObject.publish_control_mode('FeedForward')
+
+    def test_thruster(self, thruster_num: int) -> None:
+        """
+        Tests a single thruster by applying a pulse to it for 1 second.
+
+        Args:
+            thruster_num (int): The number of the thruster to test.
+        """
+        thruster_test_set = [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500]
+        thruster_test_set[thruster_num] = 1400
+
+        self.timed_pwm(1, thruster_test_set)
+
+    def test_all_thrusters(self) -> None:
+        """
+        Tests all thrusters by applying a pulse to each one for 1 second.
+        """
+        for i in range(len(test_sets)):
+            print(f'Testing thruster {i}')
+            self.test_thruster(i)
+            self.timed_pwm(3, stop_set)
+
+
+
+

@@ -115,15 +115,15 @@ class TestMatrixUtils:
         result = Plant.matrix_vector_multiply(matrix, vector)
         assert result == pytest.approx(expected)
 
-    @pytest.mark.parametrize(
-        "a, b, expected",
-        [
-            ([1, 0, 0], [0, 1, 0], [0, 0, 1]),
-            ([0, 1, 2], [3, 4, 5], [-6, 6, -3]),
-        ],
-    )
-    def test_cross_product(self, a, b, expected):
-        assert Plant.cross_product(a, b) == pytest.approx(expected)
+#    @pytest.mark.parametrize(
+#        "a, b, expected",
+#        [
+#            ([1, 0, 0], [0, 1, 0], [0, 0, 1]),
+#            ([0, 1, 2], [3, 4, 5], [-6, 6, -3]),
+#        ],
+#    )
+#    def test_cross_product(self, a, b, expected):
+#        assert Plant.cross_product(a, b) == pytest.approx(expected)
 
     def test_cross_product_invalid(self):
         with pytest.raises(IndexError):

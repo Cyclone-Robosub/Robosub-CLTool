@@ -1,10 +1,10 @@
-from std_msgs.msg import Int32MultiArray, Bool, Int64
-from crs_ros2_interfaces.msg import PwmCmd
-from rclpy.node import Node
-from rclpy.publisher import Publisher
 from typing import List
 
+from rclpy.node import Node
+from rclpy.publisher import Publisher
+from std_msgs.msg import Bool, Int32MultiArray, Float32MultiArray, String
 from crs_ros2_interfaces.msg import PwmCmd
+
 
 class Pwm_Publisher(Node):
     """
@@ -23,49 +23,60 @@ class Pwm_Publisher(Node):
     """
 
     def __init__(self) -> None:
-        """
-        Initializes the node and its publishers.
-        """
-        super().__init__("python_cltool_node")
+        """Initialize the node and its publishers."""
+        super().__init__('python_cltool_node')
         self.commandPublisher: Publisher = self.create_publisher(
-            PwmCmd, "pwm_cmd_topic", 10
-        )
-        
-        self.ManualToggleSwitch: Publisher = self.create_publisher(
-            Bool, "manual_toggle_switch", 3
-        )
-        self.ManualOverride: Publisher = self.create_publisher(
-            Bool, "manualOverride", 4
+            PwmCmd, 'pwm_cmd_topic', 10
         )
 
-    def publish_pwm_cmd(self, pwm_array: List[int], is_timed: bool, pwm_duration: float) -> None:
+        self.ManualToggleSwitch: Publisher = self.create_publisher(
+            Bool, 'manual_toggle_switch', 3
+        )
+        self.ManualOverride: Publisher = self.create_publisher(
+            Bool, 'manualOverride', 4
+        )
+        self.PositionPublisher: Publisher = self.create_publisher(
+            Float32MultiArray, 'position_topic', 10
+        )
+        self.WaypointPublisher: Publisher = self.create_publisher(
+            Float32MultiArray, 'waypoint_topic', 10
+        )
+        self.ControlModePublisher: Publisher = self.create_publisher(
+            String, 'control_mode_topic', 10
+        )
+
+    def publish_pwm_cmd(self, pwm_array: List[int], is_timed: bool, pwm_duration: float, is_override: bool) -> None:
         """
-        Publishes a list of PWM values to the 'array_Cltool_topic'.
+        Publish a list of PWM values to the 'array_Cltool_topic'.
 
         Args:
             pwm_array (List[int]): List of PWM values (typically 8 elements for 8 thrusters).
             is_timed (bool): Bool for if supplied pwm values should be used for a specific duration or indefinetely.
-            pwm_duration (int): Duration to use the pwm values for. Should be ignored if is_time is true
+            pwm_duration (int): Duration to use the pwm values for. Should be ignored if is_time is true.
         """
         msg = PwmCmd()
-        msg.pwm_flt = 0
-        msg.pwm_frt = 1
-        msg.pwm_rlt = 2
-        msg.pwm_rrt = 3
-        msg.pwm_flb = 10
-        msg.pwm_frb = 11
-        msg.pwm_rlb = 12
-        msg.pwm_rrb = 13
-        
-        msg.pwm_duration = pwm_duration
+        msg.pwm_flt = pwm_array[0]
+        msg.pwm_frt = pwm_array[1]
+        msg.pwm_rlt = pwm_array[2]
+        msg.pwm_rrt = pwm_array[3]
+        msg.pwm_flb = pwm_array[4]
+        msg.pwm_frb = pwm_array[5]
+        msg.pwm_rlb = pwm_array[6]
+        msg.pwm_rrb = pwm_array[7]
         msg.is_timed = is_timed
-        
+        msg.duration = pwm_duration
+        msg.is_overriding = is_override
+
         self.commandPublisher.publish(msg)
-        print(msg)
+
+        # Print the published message for debugging
+        print(f'Published PWM array: {pwm_array}')
+        print(f'Is timed: {is_timed}')
+        print(f'Duration: {pwm_duration}')
 
     def publish_manual_switch(self, isManualEnabled: bool) -> None:
         """
-        Publishes a boolean flag to toggle manual control mode.
+        Publish a boolean flag to toggle manual control mode.
 
         Args:
             isManualEnabled (bool): True to enable manual control, False to disable.
@@ -74,9 +85,15 @@ class Pwm_Publisher(Node):
         msg.data = isManualEnabled
         self.ManualToggleSwitch.publish(msg)
 
+        if isManualEnabled:
+            print('Manual mode enabled')
+            self.publish_control_mode('FeedForward')
+        else:
+            self.publish_control_mode('PID')
+
     def publish_manual_override(self, isMistakeMade: bool) -> None:
         """
-        Publishes a manual override signal, typically used for emergency stops or correction.
+        Publish a manual override signal, typically used for emergency stops or correction.
 
         Args:
             isMistakeMade (bool): True if an override is needed due to error or fault.
@@ -84,4 +101,44 @@ class Pwm_Publisher(Node):
         msg = Bool()
         msg.data = isMistakeMade
         self.ManualOverride.publish(msg)
+
+        if isMistakeMade:
+            print('Manual override triggered')
+        else:
+            print('Manual override cleared')
+
+    def publish_position(self, position: List[float]) -> None:
+        """
+        Publish a list of positions to the 'position_topic'.
+
+        Args:
+            position (List[float]): List of positions to publish.
+        """
+        assert len(position) == 6
+        msg = Float32MultiArray()
+        msg.data = position
+        self.PositionPublisher.publish(msg)
+
+    def publish_waypoint(self, waypoint: List[float]) -> None:
+        """
+        Publish a list of waypoints to the 'waypoint_topic'.
+
+        Args:
+            waypoint (List[float]): List of waypoints to publish.
+        """
+        assert len(waypoint) == 6
+        msg = Float32MultiArray()
+        msg.data = waypoint
+        self.WaypointPublisher.publish(msg)
+
+    def publish_control_mode(self, control_mode: str) -> None:
+        """
+        Publish a control mode to the 'control_mode_topic'.
+
+        Args:
+            control_mode (str): Control mode to publish.
+        """
+        msg = String()
+        msg.data = control_mode
+        self.ControlModePublisher.publish(msg)
         print(msg.data)
