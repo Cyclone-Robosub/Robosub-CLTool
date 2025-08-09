@@ -198,12 +198,12 @@ class Pwm_Cltool:
         new_pwm = [int(scale * (i - stop_pulse) + stop_pulse) for i in pwm_set]
         return new_pwm
 
-    def timed_pwm(self, time_s: int, pwm_set: List[int], scale: float = 1.0) -> None:
+    def timed_pwm(self, time_s: float, pwm_set: List[int], scale: float = 1.0) -> None:
         """
         Sends a PWM command for a fixed duration.
 
         Args:
-            time_s (int): Duration in seconds for which to apply the PWM.
+            time_s (float): Duration in seconds for which to apply the PWM.
             pwm_set (List[int]): PWM values to apply.
             scale (float): Optional scale factor for PWM values.
         """
