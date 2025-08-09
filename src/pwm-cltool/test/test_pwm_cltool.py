@@ -7,7 +7,7 @@ import rclpy
 from rclpy.node import Node
 
 from std_msgs.msg import Bool, Int32MultiArray, Int64
-from pwm_cltool.pwm_cltool import Pwm_Cltool, stop_set, down_set, fwd_set
+from pwm_cltool.pwm_cltool import Pwm_Cltool, stop_set, down_set, fwd_set, test_sets
 
 
 import pytest
@@ -18,7 +18,7 @@ from std_msgs.msg import String, Float32MultiArray
 from crs_ros2_interfaces.msg import PwmCmd  # Replace with your actual import
 
 
-class TestPwmCltoolNode(Node):
+class PwmCltoolTestNode(Node):
     
     def __init__(self):
         super().__init__('TestPwmCltool')
@@ -76,7 +76,7 @@ def cl_tool_test_node():
     if not rclpy.ok():
         rclpy.init()
     
-    test_node = TestPwmCltoolNode()
+    test_node = PwmCltoolTestNode()
     
     executor = SingleThreadedExecutor()
     executor.add_node(test_node)
@@ -172,6 +172,28 @@ def test_manual_function(cl_tool_test_node):
     Cltool.manual()
     rclpy.spin_once(node, timeout_sec=1.0)
     assert node.received_control_mode == 'FeedForward', f"Received control mode: {node.received_control_mode}\nExpected control mode: feed-forward\n"
+
+def test_thruster(cl_tool_test_node):
+    test_data = cl_tool_test_node
+    node = test_data['test_node']
+    executor = test_data['executor']
+    Cltool = test_data['Cltool']
+
+    Cltool.test_thruster(0)
+    rclpy.spin_once(node, timeout_sec=1.0)
+    assert node.received_pwm_data == test_sets[0]
+    assert node.received_is_timed is True
+    assert node.received_pwm_duration == 1.0
+    assert node.received_is_overriding is False
+
+#def test_all_thrusters(cl_tool_test_node):
+#    test_data = cl_tool_test_node
+#    node = test_data['test_node']
+#    executor = test_data['executor']
+#    Cltool = test_data['Cltool']
+#
+#    Cltool.test_all_thrusters()
+#    rclpy.spin_once(node, timeout_sec=1.0)
 
 #@pytest.fixture
 #def cleanup_rclpy():
