@@ -181,10 +181,22 @@ def test_thruster(cl_tool_test_node):
 
     Cltool.test_thruster(0)
     rclpy.spin_once(node, timeout_sec=1.0)
+
     assert node.received_pwm_data == test_sets[0]
     assert node.received_is_timed is True
     assert node.received_pwm_duration == 1.0
     assert node.received_is_overriding is False
+
+def test_all_thrusters(cl_tool_test_node):
+    test_data = cl_tool_test_node
+    node = test_data['test_node']
+    executor = test_data['executor']
+    Cltool = test_data['Cltool']
+
+    Cltool.test_all_thrusters()
+    rclpy.spin_once(node, timeout_sec=1.0)
+
+
 
 #def test_all_thrusters(cl_tool_test_node):
 #    test_data = cl_tool_test_node
