@@ -280,6 +280,7 @@ class Pwm_Cltool:
         for i in range(len(test_sets)):
             print(f'Testing thruster {i}')
             self.test_thruster(i)
+            self.timed_pwm(3, stop_set)
 
 
 
