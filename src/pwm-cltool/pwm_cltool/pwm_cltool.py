@@ -22,7 +22,7 @@ fwd_pulse: int = int(fwd_pulse_raw * rev_adj)
 zero_set: List[int] = [0 for _ in range(8)]
 stop_set: List[int] = [stop_pulse for _ in range(8)]
 
-test_sets = [
+test_sets : List[List[int]] = [
     [1400, 1500, 1400, 1500, 1400, 1500, 1400, 1500],
     [1500, 1400, 1500, 1400, 1500, 1400, 1500, 1400],
     [1500, 1500, 1400, 1400, 1500, 1500, 1400, 1400],
@@ -107,6 +107,7 @@ class Pwm_Cltool:
                 "crab_set": crab_set,
                 "down_set": down_set,
                 "test_set": test_set,
+                "test_sets": test_sets,
                 "barrel": barrel,
                 "summer": summer,
                 "spin_set": spin_set,
@@ -268,6 +269,23 @@ class Pwm_Cltool:
         Sets control mode to manual
         """
         self.publishCommandDurationObject.publish_control_mode('FeedForward')
+
+    def test_thruster(self, thruster_num: int) -> None:
+        """
+        Tests a single thruster by applying a pulse to it for 1 second.
+
+        Args:
+            thruster_num (int): The number of the thruster to test.
+        """
+        self.timed_pwm(1.0, test_sets[thruster_num])
+
+    def test_all_thrusters(self) -> None:
+        """
+        Tests all thrusters by applying a pulse to each one for 1 second.
+        """
+        for i in range(len(test_sets)):
+            self.test_thruster(i)
+
 
 
 
