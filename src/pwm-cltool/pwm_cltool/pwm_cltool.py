@@ -284,6 +284,7 @@ class Pwm_Cltool:
         Tests all thrusters by applying a pulse to each one for 1 second.
         """
         for i in range(len(test_sets)):
+            print(f'Testing thruster {i}')
             self.test_thruster(i)
 
 
