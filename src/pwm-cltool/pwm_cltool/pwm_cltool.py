@@ -22,17 +22,9 @@ fwd_pulse: int = int(fwd_pulse_raw * rev_adj)
 zero_set: List[int] = [0 for _ in range(8)]
 stop_set: List[int] = [stop_pulse for _ in range(8)]
 
-test_sets : List[List[int]] = [
-    [1400, 1500, 1400, 1500, 1400, 1500, 1400, 1500],
-    [1500, 1400, 1500, 1400, 1500, 1400, 1500, 1400],
-    [1500, 1500, 1400, 1400, 1500, 1500, 1400, 1400],
-    [1500, 1500, 1500, 1400, 1500, 1500, 1500, 1500],
-    [1500, 1500, 1500, 1500, 1400, 1500, 1500, 1500],
-    [1500, 1500, 1500, 1500, 1500, 1400, 1500, 1500],
-    [1500, 1500, 1500, 1500, 1500, 1500, 1400, 1500],
-    [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1400]
-]
-
+test_sets : List[List[int]] = [ [1500 for _ in range(8)] for _ in range(8) ]
+for i in range(8):
+    test_sets[i][i] = 1400
 
 
 fwd_set: List[int] = [stop_pulse for _ in range(4)] + [
@@ -276,8 +268,10 @@ class Pwm_Cltool:
         Args:
             thruster_num (int): The number of the thruster to test.
         """
-        return
-        self.timed_pwm(1.0, stop_set)
+        thruster_test_set = [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500]
+        thruster_test_set[thruster_num] = 1400
+
+        self.timed_pwm(1, thruster_test_set)
 
     def test_all_thrusters(self) -> None:
         """
