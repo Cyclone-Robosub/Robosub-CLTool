@@ -1,3 +1,3 @@
-colcon build --packages-select pwm_cltool crs_ros2_interfaces:w
+colcon build --packages-select pwm_cltool
 
 source install/setup.bash
