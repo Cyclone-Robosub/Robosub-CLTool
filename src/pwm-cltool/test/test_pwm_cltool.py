@@ -169,7 +169,12 @@ def test_manual_function(cl_tool_test_node):
     Cltool = test_data['Cltool']
 
     Cltool.manual()
-    rclpy.spin_once(node, timeout_sec=1.0)
+    i = 0
+    max = 3
+    while node.received_control_mode != 'FeedForward' and i < max:
+        rclpy.spin_once(node, timeout_sec=1.0)
+        i += 1
+    
     assert node.received_control_mode == 'FeedForward', f"Received control mode: {node.received_control_mode}\nExpected control mode: feed-forward\n"
 
 def test_thruster(cl_tool_test_node):
@@ -185,6 +190,27 @@ def test_thruster(cl_tool_test_node):
     assert node.received_is_timed is True
     assert node.received_pwm_duration == 1.0
     assert node.received_is_overriding is False
+
+def test_manual_initializes_correctly(cl_tool_test_node):
+    test_data = cl_tool_test_node
+    node = test_data['test_node']
+    executor = test_data['executor']
+    Cltool = test_data['Cltool']
+
+    Cltool.manual()
+    rclpy.spin_once(node, timeout_sec=1.0)
+    rclpy.spin_once(node, timeout_sec=1.0)
+    assert node.received_control_mode == 'FeedForward', f"Received control mode: {node.received_control_mode}\nExpected control mode: feed-forward\n"
+    assert node.received_pwm_data == [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500]
+    
+    Cltool.pwm(fwd_set)
+    rclpy.spin_once(node, timeout_sec=1.0)
+    assert node.received_pwm_data == fwd_set
+    Cltool.manual()
+    rclpy.spin_once(node, timeout_sec=1.0)
+    assert node.received_control_mode == 'FeedForward', f"Received control mode: {node.received_control_mode}\nExpected control mode: feed-forward\n"
+    assert node.received_pwm_data == [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500]
+
 
 #def test_all_thrusters(cl_tool_test_node):
 #    test_data = cl_tool_test_node

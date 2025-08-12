@@ -261,6 +261,7 @@ class Pwm_Cltool:
         Sets control mode to manual
         """
         self.publishCommandDurationObject.publish_control_mode('FeedForward')
+        self.publishCommandDurationObject.publish_pwm_cmd(stop_set, False, -1.0, False)
 
     def test_thruster(self, thruster_num: int) -> None:
         """
