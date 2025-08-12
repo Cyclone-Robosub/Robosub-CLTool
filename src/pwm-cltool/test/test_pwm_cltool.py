@@ -31,6 +31,7 @@ class PwmCltoolTestNode(Node):
         self.received_control_mode = None
         self.received_position = None
         self.received_waypoint = None
+        self.received_pwm_limit = None
  
         # Create subscribers
         self.pwm_subscriber = self.create_subscription(
@@ -41,7 +42,12 @@ class PwmCltoolTestNode(Node):
             Float32MultiArray, 'position_topic', self.position_callback, 10)
         self.waypoint_subscriber = self.create_subscription(
             Float32MultiArray, 'waypoint_topic', self.waypoint_callback, 10)
+        self.pwm_limit_subscriber = self.create_subscription(
+            Int32MultiArray, 'pwm_limit_topic', self.pwm_limit_callback, 10)
     
+    def pwm_limit_callback(self, msg):
+        self.received_pwm_limit = msg.data
+
     def pwm_callback(self, msg):
         self.received_pwm_data = [
             msg.pwm_flt, 
@@ -97,13 +103,22 @@ def cl_tool_test_node():
     if rclpy.ok():
         rclpy.shutdown()
 
+def test_pwm_limit_function(cl_tool_test_node):
+    test_data = cl_tool_test_node
+    node = test_data['test_node']
+    executor = test_data['executor']
+    Cltool = test_data['Cltool']
+
+    Cltool.set_pwm_limit(1444, 1666)
+    rclpy.spin_once(node, timeout_sec=1.0)
+    assert node.received_pwm_limit[0] == 1444
+    assert node.received_pwm_limit[1] == 1666
 
 def test_untimed_pwm_function(cl_tool_test_node):
     test_data = cl_tool_test_node
     node = test_data['test_node']
     executor = test_data['executor']
     Cltool = test_data['Cltool']
-    
     Cltool.pwm(fwd_set)
     rclpy.spin_once(node, timeout_sec=1.0)
     assert node.received_pwm_data == fwd_set

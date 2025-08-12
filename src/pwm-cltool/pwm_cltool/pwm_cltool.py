@@ -284,6 +284,10 @@ class Pwm_Cltool:
             self.test_thruster(i)
             self.timed_pwm(3, stop_set)
 
-
+    def set_pwm_limit(self, min: int, max: int) -> None:
+        """
+        Sets the PWM limits for the thrusters.
+        """
+        self.publishCommandDurationObject.publish_pwm_limit(min, max)
 
 

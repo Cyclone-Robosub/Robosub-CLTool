@@ -44,6 +44,17 @@ class Pwm_Publisher(Node):
         self.ControlModePublisher: Publisher = self.create_publisher(
             String, 'control_mode_topic', 10
         )
+        self.PwmLimitPublisher: Publisher = self.create_publisher(
+            Int32MultiArray, 'pwm_limit_topic', 10
+        )
+    
+    def publish_pwm_limit(self, min: int, max: int) -> None:
+        """
+        Publish a list of PWM limits to the 'pwm_limit_topic'.
+        """
+        msg = Int32MultiArray()
+        msg.data = [min, max]
+        self.PwmLimitPublisher.publish(msg)
 
     def publish_pwm_cmd(self, pwm_array: List[int], is_timed: bool, pwm_duration: float, is_override: bool) -> None:
         """
