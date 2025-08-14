@@ -67,7 +67,7 @@ class Pwm_Publisher(Node):
         self._timer: Timer = self.create_timer(self.timer_period_seconds, self.timer_callback)
 
         self.correction_axis = -1
-        self.p_values = [1,1,1,1,1,1]
+        self.p_values = [1,1,1,1,1,0.005]
         self.limits = [1, 1, 1, 1, 1, 1]
         self.current_position: List[float] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.current_waypoint: List[float] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -90,7 +90,14 @@ class Pwm_Publisher(Node):
             
 
     def correct_position(self, axis: int) -> None:
+
+
         error = self.current_waypoint[axis] - self.current_position[axis]
+        if error > 180:
+            error = 360 - error
+        elif error < -180:
+            error = -360 - error    
+
         response = self.p_values[axis] * error
         if response > self.limits[axis]:
             response = self.limits[axis]
