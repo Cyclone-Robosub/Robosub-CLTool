@@ -2,8 +2,10 @@ from typing import List
 
 from rclpy.node import Node
 from rclpy.publisher import Publisher
+from rclpy.subscription import Subscription
 from std_msgs.msg import Bool, Int32MultiArray, Float32MultiArray, String
 from crs_ros2_interfaces.msg import PwmCmd
+from rclpy.timer import Timer
 
 
 class Pwm_Publisher(Node):
@@ -50,8 +52,71 @@ class Pwm_Publisher(Node):
         self.PidGainPublisher: Publisher = self.create_publisher(
             Float32MultiArray, 'pid_gain_topic', 10
         )
+        
+
+
+        self.PositionSubscriber: Subscription = self.create_subscription(
+            Float32MultiArray, 'position_topic', self.position_callback, 10
+        )
+        self.WaypointSubscriber: Subscription = self.create_subscription(
+            Float32MultiArray, 'waypoint_topic', self.waypoint_callback, 10
+        )
+        
+        # Periodic timer (default 10 Hz)
+        self.timer_period_seconds: float = 0.1
+        self._timer: Timer = self.create_timer(self.timer_period_seconds, self.timer_callback)
+
+        self.correction_axis = -1
+        self.p_values = [1,1,1,1,1,1]
+        self.limits = [1, 1, 1, 1, 1, 1]
+        self.current_position: List[float] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        self.current_waypoint: List[float] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        self.error: List[float] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        self.correction_sets: List[List[int]] = [
+            [1440, 1560, 1460, 1540, 1600, 1400, 1600, 1400],
+            [1500, 1500, 1500, 1500, 1900, 1900, 1100, 1100],
+            [1900, 1100, 1900, 1100, 1500, 1500, 1500, 1500],
+            [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500],
+            [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500],
+            [1500, 1500, 1500, 1500, 1900, 1900, 1900, 1900]            
+        ]
     
-    
+    def timer_callback(self) -> None:
+
+        if self.correction_axis == -1:
+            pass
+        else:
+            self.correct_position(self.correction_axis)
+            
+
+    def correct_position(self, axis: int) -> None:
+        error = self.current_waypoint[axis] - self.current_position[axis]
+        response = self.p_values[axis] * error
+        if response > self.limits[axis]:
+            response = self.limits[axis]
+        elif response < -self.limits[axis]:
+            response = -self.limits[axis]
+
+        
+        pwm = self.correction_sets[axis]
+        pwm = self.scaled_pwm(pwm, response)
+        self.publish_pwm_cmd(pwm, False, -1.0, False)
+
+    def scaled_pwm(self, pwm_set: List[int], scale: float) -> List[int]:
+        stop_pulse = 1500  
+        new_pwm = [int(scale * (i - stop_pulse) + stop_pulse) for i in pwm_set]
+        return new_pwm
+
+    def state_error(self) -> None:
+        for i in range(6):
+            self.error[i] = self.current_position[i] - self.current_waypoint[i]
+
+    def waypoint_callback(self, msg: Float32MultiArray) -> None:
+        self.current_waypoint = list(msg.data)
+
+    def position_callback(self, msg: Float32MultiArray) -> None:
+        self.current_position = list(msg.data)
+
     def publish_pwm_limit(self, min: int, max: int) -> None:
         """
         Publish a list of PWM limits to the 'pwm_limit_topic'.
@@ -133,6 +198,9 @@ class Pwm_Publisher(Node):
         msg = Float32MultiArray()
         msg.data = position
         self.PositionPublisher.publish(msg)
+
+    def _handle_position(self, msg: Float32MultiArray) -> None:
+        self.current_position = list(msg.data)
 
     def publish_waypoint(self, waypoint: List[float]) -> None:
         """

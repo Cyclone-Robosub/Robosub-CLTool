@@ -56,7 +56,7 @@ torpedo: List[int] = [fwd_pulse, fwd_pulse, fwd_pulse, fwd_pulse] + [
     rev_pulse,
 ]
 
-travel_set: List[int] = [1450, 1550, 1450, 1550, 1900, 1100, 1900, 1100]
+travel_set: List[int] = [1440, 1560, 1460, 1540, 1600, 1400, 1600, 1400]
 
 
 class Pwm_Cltool:
@@ -122,6 +122,9 @@ class Pwm_Cltool:
             locals = locals
         )
         console.interact(banner=banner, exitmsg="Console exiting, shutting down...")
+
+    def correct(self, axis: int) -> None:
+        self.publishCommandDurationObject.correction_axis = axis
 
     def override(self, durationMS: float = -1.0, pwm_set: List[int] = stop_set):
         """
@@ -302,6 +305,7 @@ class Pwm_Cltool:
         for i in range(len(times)):
             self.timed_pwm(times[i], sequence[i])
             sleep(0.1)
+
 
 
 
