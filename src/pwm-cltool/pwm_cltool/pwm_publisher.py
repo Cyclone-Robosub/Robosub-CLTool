@@ -107,7 +107,7 @@ class Pwm_Publisher(Node):
             if error > 180:
                 error = 360 - error
             elif error < -180:
-            error = -360 - error    
+                error = -360 - error    
 
         response = self.p_values[axis] * error + self.i_values[axis] * self.error_integral[axis] + self.d_values[axis] * self.error_derivative[axis]
         if response > self.limits[axis]:
