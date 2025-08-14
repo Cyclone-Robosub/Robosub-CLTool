@@ -56,6 +56,8 @@ torpedo: List[int] = [fwd_pulse, fwd_pulse, fwd_pulse, fwd_pulse] + [
     rev_pulse,
 ]
 
+travel_set: List[int] = [1450, 1550, 1450, 1550, 1900, 1100, 1900, 1100]
+
 
 class Pwm_Cltool:
     """
@@ -103,6 +105,7 @@ class Pwm_Cltool:
                 "summer": summer,
                 "spin_set": spin_set,
                 "torpedo": torpedo,
+                "travel_set": travel_set,
         }
                                                     
         readline.set_completer(rlcompleter.Completer(locals).complete)
@@ -289,5 +292,16 @@ class Pwm_Cltool:
         Sets the PWM limits for the thrusters.
         """
         self.publishCommandDurationObject.publish_pwm_limit(min, max)
+
+    def sequence(self, 
+        times: list[float],
+        sequence: List[List[int]]) -> None:
+        """
+        Sends a sequence of PWM commands to the thrusters.
+        """
+        for i in range(len(times)):
+            self.timed_pwm(times[i], sequence[i])
+            sleep(0.1)
+
 
 
