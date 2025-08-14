@@ -167,10 +167,6 @@ class Pwm_Publisher(Node):
 
         self.commandPublisher.publish(msg)
 
-        # Print the published message for debugging
-        print(f'Published PWM array: {pwm_array}')
-        print(f'Is timed: {is_timed}')
-        print(f'Duration: {pwm_duration}')
 
     def publish_manual_switch(self, isManualEnabled: bool) -> None:
         """
