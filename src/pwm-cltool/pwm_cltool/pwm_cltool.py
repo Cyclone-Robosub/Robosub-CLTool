@@ -63,14 +63,10 @@ class Pwm_Cltool:
     """
     Provides a manual control interface for a thrust system using the Pwm_Cltool ROS 2 node.
 
-    This class initializes publishers for sending PWM signals and duration commands
-    to control a robotic system's thrusters. It supports basic manual operations,
-    overrides, and signal scaling for real-time testing or remote control.
-
     Attributes:
         plant (Plant): An instance of the Plant class for modeling/control feedback.
         thrusters (List[int]): Pin numbers for each thruster.
-        publishCommandDurationObject (Pwm_Cltool): ROS node used to publish control messages.
+        pwm_node (Pwm_Publisher): ROS node used to publish control messages.
         ros_thread (threading.Thread): Thread to keep the ROS node spinning.
     """
 
@@ -82,13 +78,13 @@ class Pwm_Cltool:
         self.plant = Plant()
         self.thrusters: List[int] = [3, 2, 5, 4, 18, 20, 19, 21]
         rclpy.init()
-        self.publishCommandDurationObject = Pwm_Publisher()
+        self.pwm_node = Pwm_Publisher()
         self.ros_thread = threading.Thread(target=self.spin_ros)
         self.ros_thread.start()
         self.logFile = log_file
         print("Switching onto manual control...")
         sleep(0.5)
-        self.publishCommandDurationObject.publish_manual_switch(True)
+        self.pwm_node.publish_manual_switch(True)
         print("Ready to input manual commands")
         print("Please type clt.exitCLTool() to safely exit manual control.\n")
 
@@ -123,8 +119,9 @@ class Pwm_Cltool:
         )
         console.interact(banner=banner, exitmsg="Console exiting, shutting down...")
 
-    def correct(self, axis: int) -> None:
-        self.publishCommandDurationObject.correction_axis = axis
+    def correct(self, axis: int, auto: bool = False) -> None:
+        self.pwm_node.correction_axis = axis
+        self.pwm_node.auto_correction_active = auto
 
     def override(self, durationMS: float = -1.0, pwm_set: List[int] = stop_set):
         """
@@ -134,7 +131,7 @@ class Pwm_Cltool:
             durationMS (int): Duration in milliseconds. Use -1 for continuous command.
             pwm_set (List[int]): PWM values to apply to thrusters during override.
         """
-        self.publishCommandDurationObject.publish_manual_override(True)
+        self.pwm_node.publish_manual_override(True)
         if durationMS < 0.0:
             is_timed = False
         else:
@@ -142,21 +139,21 @@ class Pwm_Cltool:
             
         sleep(0.2)
         
-        self.publishCommandDurationObject.publish_pwm_cmd(pwm_set, is_timed, durationMS)
+        self.pwm_node.publish_pwm_cmd(pwm_set, is_timed, durationMS)
 
     def exitCLTool(self) -> None:
         """
         Safely exits manual control by disabling the manual switch and shutting down ROS.
         """
         print("Shutting down CL Tool and Manual Control")
-        self.publishCommandDurationObject.publish_manual_switch(False)
+        self.pwm_node.publish_manual_switch(False)
         rclpy.shutdown()
 
     
     def spin_ros(self) -> None:
         """Spin via manual executor loop to avoid wait-set bugs (e.g. in testing)."""
         executor = SingleThreadedExecutor()
-        executor.add_node(self.publishCommandDurationObject)
+        executor.add_node(self.pwm_node)
         # Loop until shutdown is requested
         while rclpy.ok():
             try:
@@ -180,7 +177,7 @@ class Pwm_Cltool:
             return
         print("pwm function executed.")
         pwm_set = [int(i) for i in pwm_set]
-        self.publishCommandDurationObject.publish_pwm_cmd(pwm_set, False, -1.0, False)
+        self.pwm_node.publish_pwm_cmd(pwm_set, False, -1.0, False)
 
     def scaled_pwm(self, pwm_set: List[int], scale: float) -> List[int]:
         """
@@ -209,7 +206,7 @@ class Pwm_Cltool:
         if scale != 1:
             pwm_set = self.scaled_pwm(pwm_set, scale)
         print('Executing timed_pwm...')
-        self.publishCommandDurationObject.publish_pwm_cmd(pwm_set, True, time_s, False)
+        self.pwm_node.publish_pwm_cmd(pwm_set, True, time_s, False)
 
     def read(self) -> None:
         """Read and print the contents of the PWM command log file."""
@@ -240,7 +237,7 @@ class Pwm_Cltool:
             print("Wrong length for waypoint\n")
             return
         print(f'Executing waypoint {waypoint}')
-        self.publishCommandDurationObject.publish_waypoint(waypoint)
+        self.pwm_node.publish_waypoint(waypoint)
 
     def position(self, position: List[float]) -> None:
         """
@@ -254,20 +251,20 @@ class Pwm_Cltool:
             print("Wrong length for position\n")
             return
         print(f'Executing position {position}')
-        self.publishCommandDurationObject.publish_position(position)
+        self.pwm_node.publish_position(position)
 
     def pid(self) -> None:
         """
         Sets control mode to PID
         """
-        self.publishCommandDurationObject.publish_control_mode('PID')
+        self.pwm_node.publish_control_mode('PID')
 
     def manual(self) -> None:
         """
         Sets control mode to manual
         """
-        self.publishCommandDurationObject.publish_control_mode('FeedForward')
-        self.publishCommandDurationObject.publish_pwm_cmd(stop_set, False, -1.0, False)
+        self.pwm_node.publish_control_mode('FeedForward')
+        self.pwm_node.publish_pwm_cmd(stop_set, False, -1.0, False)
 
     def test_thruster(self, thruster_num: int) -> None:
         """
@@ -294,7 +291,7 @@ class Pwm_Cltool:
         """
         Sets the PWM limits for the thrusters.
         """
-        self.publishCommandDurationObject.publish_pwm_limit(min, max)
+        self.pwm_node.publish_pwm_limit(min, max)
 
     def sequence(self, 
         times: list[float],
