@@ -25,17 +25,9 @@ class Pwm_Publisher(Node):
     """
 
     def __init__(self) -> None:
-        """Initialize the node and its publishers."""
         super().__init__('python_cltool_node')
         self.commandPublisher: Publisher = self.create_publisher(
             PwmCmd, 'pwm_cmd_topic', 10
-        )
-
-        self.ManualToggleSwitch: Publisher = self.create_publisher(
-            Bool, 'manual_toggle_switch', 3
-        )
-        self.ManualOverride: Publisher = self.create_publisher(
-            Bool, 'manualOverride', 4
         )
         self.PositionPublisher: Publisher = self.create_publisher(
             Float32MultiArray, 'position_topic', 10
@@ -53,8 +45,6 @@ class Pwm_Publisher(Node):
             Float32MultiArray, 'pid_gain_topic', 10
         )
         
-
-
         self.PositionSubscriber: Subscription = self.create_subscription(
             Float32MultiArray, 'position_topic', self.position_callback, 10
         )
@@ -234,9 +224,6 @@ class Pwm_Publisher(Node):
         self.current_position = list(msg.data)
 
     def publish_pwm_limit(self, min: int, max: int) -> None:
-        """
-        Publish a list of PWM limits to the 'pwm_limit_topic'.
-        """
         msg = Int32MultiArray()
         msg.data = [min, max]
         self.PwmLimitPublisher.publish(msg)
@@ -266,39 +253,39 @@ class Pwm_Publisher(Node):
         self.commandPublisher.publish(msg)
 
 
-    def publish_manual_switch(self, isManualEnabled: bool) -> None:
-        """
-        Publish a boolean flag to toggle manual control mode.
+#    def publish_manual_switch(self, isManualEnabled: bool) -> None:
+#        """
+#        Publish a boolean flag to toggle manual control mode.
+#
+#        Args:
+#            isManualEnabled (bool): True to enable manual control, False to disable.
+#        """
+#        msg = Bool()
+#        msg.data = isManualEnabled
+#        self.ManualToggleSwitch.publish(msg)
+#
+#        if isManualEnabled:
+#            print('Manual mode enabled')
+#            self.publish_control_mode('FeedForward')
+#        else:
+#            self.publish_control_mode('PID')
 
-        Args:
-            isManualEnabled (bool): True to enable manual control, False to disable.
-        """
-        msg = Bool()
-        msg.data = isManualEnabled
-        self.ManualToggleSwitch.publish(msg)
-
-        if isManualEnabled:
-            print('Manual mode enabled')
-            self.publish_control_mode('FeedForward')
-        else:
-            self.publish_control_mode('PID')
-
-    def publish_manual_override(self, isMistakeMade: bool) -> None:
-        """
-        Publish a manual override signal, typically used for emergency stops or correction.
-
-        Args:
-            isMistakeMade (bool): True if an override is needed due to error or fault.
-        """
-        msg = Bool()
-        msg.data = isMistakeMade
-        self.ManualOverride.publish(msg)
-
-        if isMistakeMade:
-            print('Manual override triggered')
-        else:
-            print('Manual override cleared')
-
+#    def publish_manual_override(self, isMistakeMade: bool) -> None:
+#        """
+#        Publish a manual override signal, typically used for emergency stops or correction.
+#
+#        Args:
+#            isMistakeMade (bool): True if an override is needed due to error or fault.
+#        """
+#        msg = Bool()
+#        msg.data = isMistakeMade
+#        self.ManualOverride.publish(msg)
+#
+#        if isMistakeMade:
+#            print('Manual override triggered')
+#        else:
+#            print('Manual override cleared')
+#
     def publish_position(self, position: List[float]) -> None:
         """
         Publish a list of positions to the 'position_topic'.

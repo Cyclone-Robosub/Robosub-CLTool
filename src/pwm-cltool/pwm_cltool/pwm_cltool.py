@@ -84,7 +84,6 @@ class Pwm_Cltool:
         self.logFile = log_file
         print("Switching onto manual control...")
         sleep(0.5)
-        self.pwm_node.publish_manual_switch(True)
         print("Ready to input manual commands")
         print("Please type clt.exitCLTool() to safely exit manual control.\n")
 
@@ -146,7 +145,6 @@ class Pwm_Cltool:
         Safely exits manual control by disabling the manual switch and shutting down ROS.
         """
         print("Shutting down CL Tool and Manual Control")
-        self.pwm_node.publish_manual_switch(False)
         rclpy.shutdown()
 
     
