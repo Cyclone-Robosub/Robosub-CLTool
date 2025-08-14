@@ -68,8 +68,9 @@ class Pwm_Publisher(Node):
 
         self.correction_axis = -1
         self.p_values = [0.5,0.5,0.5,0.005,0.005,0.005]
-        self.i_values = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+        self.i_values = [0.05, 0.05, 0.05, 0.0005, 0.0005, 0.0005]
         self.d_values = [0.5, 0.5, 0.5, 0.005, 0.005, 0.005]
+        self.i_max = [100, 100, 100, 10, 10, 10]
         self.limits = [1, 1, 1, 1, 1, 1]
         self.current_position: List[float] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         self.current_waypoint: List[float] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
@@ -109,12 +110,17 @@ class Pwm_Publisher(Node):
             elif error < -180:
                 error = -360 - error    
 
-        response = self.p_values[axis] * error + self.i_values[axis] * self.error_integral[axis] + self.d_values[axis] * self.error_derivative[axis]
+        response = self.p_values[axis] * error 
+        if self.error_integral[axis] > self.i_max[axis]:
+            response += self.i_max[axis]
+        elif self.error_integral[axis] < -self.i_max[axis]:
+            response += -self.i_max[axis]
+        response += self.d_values[axis] * self.error_derivative[axis]
+        
         if response > self.limits[axis]:
             response = self.limits[axis]
         elif response < -self.limits[axis]:
             response = -self.limits[axis]
-
         
         pwm = self.correction_sets[axis]
         pwm = self.scaled_pwm(pwm, response)
