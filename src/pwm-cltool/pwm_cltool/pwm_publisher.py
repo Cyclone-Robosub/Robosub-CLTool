@@ -47,6 +47,10 @@ class Pwm_Publisher(Node):
         self.PwmLimitPublisher: Publisher = self.create_publisher(
             Int32MultiArray, 'pwm_limit_topic', 10
         )
+        self.PidGainPublisher: Publisher = self.create_publisher(
+            Float32MultiArray, 'pid_gain_topic', 10
+        )
+    
     
     def publish_pwm_limit(self, min: int, max: int) -> None:
         """
