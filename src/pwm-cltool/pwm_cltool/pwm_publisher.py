@@ -159,7 +159,7 @@ class Pwm_Publisher(Node):
         error = 0
 
         if self.world_frame_testing:
-            error = world_error[axis]
+            error = self.world_error[axis]
 
         # axis 0 -> x axis correction (body frame)
         elif axis == 0:
