@@ -127,7 +127,7 @@ class Pwm_Cltool:
         )
         console.interact(banner=banner, exitmsg="Console exiting, shutting down...")
 
-    def sequence(self, times: list[float], sequence: List[List[int]], scale: list[float]) -> None:
+    def sequence(self, times: List[float], sequence: List[List[int]], scale: List[float]) -> None:
         if scale is None:
             scale = [1.0 for _ in range(len(sequence))]
         for i in range(len(times)):
