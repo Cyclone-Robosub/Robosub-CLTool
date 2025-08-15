@@ -58,10 +58,10 @@ torpedo: List[int] = [fwd_pulse, fwd_pulse, fwd_pulse, fwd_pulse] + [
 
 travel_set: List[int] = [1440, 1560, 1460, 1540, 1600, 1400, 1600, 1400]
 
-comp_down_set: List[int] = [1900, 1500, 1900, 1100, 1500, 1500, 1500, 1100]
-comp_travel_set: List[int] = [1440, 1560, 1460, 1540, 1400, 1600, 1500, 1560]
+comp_down_set: List[int] = [1100, 1500, 1100, 1900, 1500, 1500, 1500, 1100]
+comp_travel_set: List[int] = [1425, 1400, 1460, 1540, 1295, 1700, 1500, 1600]
 comp_spin_set: List[int] = [1440, 1500, 1460, 1540, 1900, 1900, 1500, 1560]
-comp_barrel_set: List[int] = [1900, 1500, 1900, 1900, 1500, 1500, 1500, 1900]
+comp_barrel_set: List[int] = [1100, 1500, 1100, 1100, 1500, 1500, 1500, 1900]
 comp_summer_set: List[int] = [1900, 1500, 1100, 1100, 1500, 1500, 1500, 1900]
 class Pwm_Cltool:
     """
