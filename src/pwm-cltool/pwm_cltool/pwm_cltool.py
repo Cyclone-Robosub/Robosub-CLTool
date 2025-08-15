@@ -127,6 +127,13 @@ class Pwm_Cltool:
         )
         console.interact(banner=banner, exitmsg="Console exiting, shutting down...")
 
+    def sequence(self, times: list[float], sequence: List[List[int]], scale: list[float] = None) -> None:
+        if scale is None:
+            scale = [1.0 for _ in range(len(sequence))]
+        for i in range(len(times)):
+            self.timed_pwm(times[i], sequence[i], scale[i])
+            sleep(0.1)
+
     def correct(self, axis: int, auto: bool = False) -> None:
         self.pwm_node.correction_axis = axis
         self.pwm_node.auto_correction_active = auto
