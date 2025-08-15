@@ -73,6 +73,42 @@ class Pwm_Publisher(Node):
         self.hold_start_time = 0
         self.hold_flag = False
 
+        self.X_Axis_subscription = self.create_subscription(
+            Float32MultiArray,
+            'X_axis_CLTool_Topic',
+            self.X_axis_CLTool_Function,
+            10)
+        self.Y_Axis_subscription = self.create_subscription(
+            Float32MultiArray,
+            'Y_axis_CLTool_Topic',
+            self.Y_axis_CLTool_function,
+            10
+        )
+        self.Z_Axis_subscription = self.create_subscription(
+            Float32MultiArray,
+            'Z_axis_CLTool_Topic',
+            self.Z_axis_CLTool_function,
+            10
+        )
+        self.Roll_subscription = self.create_subscription(
+            Float32MultiArray,
+            'roll_axis_CLTool_Topic',
+            self.Roll_axis_CLTool_function,
+            10
+        )
+        self.Pitch_subscription = self.create_subscription(
+            Float32MultiArray,
+            'pitch_axis_CLTool_Topic',
+            self.Pitch_axis_CLTool_function,
+            10
+        )
+        self.YAW_subscription = self.create_subscription(
+            Float32MultiArray,
+            'yaw_axis_CLTool_Topic',
+            self.Yaw_axis_CLTool_function,
+            10
+        )
+        
         # if true, we will correct yaw by world frame error for testing purposes
         self.world_frame_testing = False
 
@@ -243,6 +279,58 @@ class Pwm_Publisher(Node):
     def position_callback(self, msg: Float32MultiArray) -> None:
         self.current_position = list(msg.data)
 
+    def X_axis_CLTool_Function(self, msg: Float32MultiArray) -> None:
+        self.p_values[0] = msg.data[0]
+        self.i_values[0] = msg.data[1]
+        self.d_values[0] = msg.data[2]
+        self.limits_values[0] = msg.data[3]
+        self.lower_tolerances[0] = msg.data[4]
+        self.upper_tolerances[0] = msg.data[5]
+        self.hold_time[0] = msg.data[6]
+    def Y_axis_CLTool_function(self, msg: Float32MultiArray) -> None:
+        self.p_values[1] = msg.data[0]
+        self.i_values[1] = msg.data[1]
+        self.d_values[1] = msg.data[2]
+        self.limits[1] = msg.data[3]
+        self.lower_tolerances[1] = msg.data[4]
+        self.upper_tolerances[1] = msg.data[5]
+        self.hold_time[1] = msg.data[6]
+
+    def Z_axis_CLTool_function(self, msg: Float32MultiArray) -> None:
+        self.p_values[2] = msg.data[0]
+        self.i_values[2] = msg.data[1]
+        self.d_values[2] = msg.data[2]
+        self.limits[2] = msg.data[3]
+        self.lower_tolerances[2] = msg.data[4]
+        self.upper_tolerances[2] = msg.data[5]
+        self.hold_time[2] = msg.data[6]
+
+    def Roll_axis_CLTool_function(self, msg: Float32MultiArray) -> None:
+        self.p_values[3] = msg.data[0]
+        self.i_values[3] = msg.data[1]
+        self.d_values[3] = msg.data[2]
+        self.limits[3] = msg.data[3]
+        self.lower_tolerances[3] = msg.data[4]
+        self.upper_tolerances[3] = msg.data[5]
+        self.hold_time[3] = msg.data[6]
+
+    def Pitch_axis_CLTool_function(self, msg: Float32MultiArray) -> None:
+        self.p_values[4] = msg.data[0]
+        self.i_values[4] = msg.data[1]
+        self.d_values[4] = msg.data[2]
+        self.limits[4] = msg.data[3]
+        self.lower_tolerances[4] = msg.data[4]
+        self.upper_tolerances[4] = msg.data[5]
+        self.hold_time[4] = msg.data[6]
+
+    def Yaw_axis_CLTool_function(self, msg: Float32MultiArray) -> None:
+        self.p_values[5] = msg.data[0]
+        self.i_values[5] = msg.data[1]
+        self.d_values[5] = msg.data[2]
+        self.limits[5] = msg.data[3]
+        self.lower_tolerances[5] = msg.data[4]
+        self.upper_tolerances[5] = msg.data[5]
+        self.hold_time[5] = msg.data[6]
     def publish_pwm_limit(self, min: int, max: int) -> None:
         msg = Int32MultiArray()
         msg.data = [min, max]
