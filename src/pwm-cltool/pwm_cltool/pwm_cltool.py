@@ -58,7 +58,11 @@ torpedo: List[int] = [fwd_pulse, fwd_pulse, fwd_pulse, fwd_pulse] + [
 
 travel_set: List[int] = [1440, 1560, 1460, 1540, 1600, 1400, 1600, 1400]
 
-
+comp_down_set: List[int] = [1900, 1500, 1900, 1100, 1500, 1500, 1500, 1100]
+comp_travel_set: List[int] = [1440, 1560, 1460, 1540, 1400, 1600, 1500, 1560]
+comp_spin_set: List[int] = [1440, 1500, 1460, 1540, 1900, 1900, 1500, 1560]
+comp_barrel_set: List[int] = [1900, 1500, 1900, 1900, 1500, 1500, 1500, 1900]
+comp_summer_set: List[int] = [1900, 1500, 1100, 1100, 1500, 1500, 1500, 1900]
 class Pwm_Cltool:
     """
     Provides a manual control interface for a thrust system using the Pwm_Cltool ROS 2 node.
@@ -101,6 +105,11 @@ class Pwm_Cltool:
                 "spin_set": spin_set,
                 "torpedo": torpedo,
                 "travel_set": travel_set,
+                "comp_down_set": comp_down_set,
+                "comp_travel_set": comp_travel_set,
+                "comp_spin_set": comp_spin_set,
+                "comp_barrel_set": comp_barrel_set,
+                "comp_summer_set": comp_summer_set,
         }
                                                     
         readline.set_completer(rlcompleter.Completer(locals).complete)
