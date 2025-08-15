@@ -121,6 +121,7 @@ class Pwm_Cltool:
     def correct(self, axis: int, auto: bool = False) -> None:
         self.pwm_node.correction_axis = axis
         self.pwm_node.auto_correction_active = auto
+        self.pwm_node.correction_active = True
 
     def override(self, durationMS: float = -1.0, pwm_set: List[int] = stop_set):
         """
@@ -263,7 +264,7 @@ class Pwm_Cltool:
         """
         self.pwm_node.publish_control_mode('FeedForward')
         self.pwm_node.publish_pwm_cmd(stop_set, False, -1.0, False)
-
+        self.pwm_node.correction_active = False
     def test_thruster(self, thruster_num: int) -> None:
         """
         Tests a single thruster by applying a pulse to it for 1 second.
