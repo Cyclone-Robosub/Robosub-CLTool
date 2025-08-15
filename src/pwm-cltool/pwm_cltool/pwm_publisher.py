@@ -73,6 +73,9 @@ class Pwm_Publisher(Node):
         self.hold_start_time = 0
         self.hold_flag = False
 
+        # if true, we will correct yaw by world frame error for testing purposes
+        self.world_frame_testing = False
+
         # only correct on z, yaw, and x axis
         self.axis_priority = [2, 5, 0]
 
@@ -146,8 +149,11 @@ class Pwm_Publisher(Node):
         old_error = self.position_error[axis]
         error = 0
 
+        if self.world_frame_testing:
+            error = world_error[axis]
+
         # axis 0 -> x axis correction (body frame)
-        if axis == 0:
+        elif axis == 0:
             error = sqrt(self.world_error[0]**2 + self.world_error[1]**2)
 
         # axis 1 -> y axis correction (body frame)
@@ -179,6 +185,7 @@ class Pwm_Publisher(Node):
                 error -= 360
             while error < -180:
                 error += 360
+        
         
         self.position_error[axis] = error
         self.derivative_error[axis] = error - old_error
