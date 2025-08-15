@@ -310,17 +310,17 @@ class Pwm_Cltool:
         Sets the PWM limits for the thrusters.
         """
         self.pwm_node.publish_pwm_limit(min, max)
-
-    def sequence(self, 
-        times: list[float],
-        sequence: List[List[int]]) -> None:
-        """
-        Sends a sequence of PWM commands to the thrusters.
-        """
-        for i in range(len(times)):
-            self.timed_pwm(times[i], sequence[i])
-            sleep(0.1)
-
-
+#
+#    def sequence(self, 
+#        times: list[float],
+#        sequence: List[List[int]]) -> None:
+#        """
+#        Sends a sequence of PWM commands to the thrusters.
+#        """
+#        for i in range(len(times)):
+#            self.timed_pwm(times[i], sequence[i])
+#            sleep(0.1)
+#
+#
 
 
