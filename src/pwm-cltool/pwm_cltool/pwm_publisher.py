@@ -233,6 +233,10 @@ class Pwm_Publisher(Node):
         for i in range(6):
             self.world_error[i] = self.current_position[i] - self.current_waypoint[i]
 
+    def reset_integral_error(self) -> None:
+        for i in range(6):
+            self.integral_error[i] = 0
+
     def waypoint_callback(self, msg: Float32MultiArray) -> None:
         self.current_waypoint = list(msg.data)
 

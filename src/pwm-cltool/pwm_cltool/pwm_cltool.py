@@ -123,6 +123,9 @@ class Pwm_Cltool:
         self.pwm_node.auto_correction_active = auto
         self.pwm_node.correction_active = True
 
+    def reset_integral_error(self) -> None:
+        self.pwm_node.reset_integral_error()
+
     def override(self, durationMS: float = -1.0, pwm_set: List[int] = stop_set):
         """
         Publishes a manual override command, typically for emergency situations.
