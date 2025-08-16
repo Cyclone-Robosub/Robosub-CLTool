@@ -108,43 +108,26 @@ class Pwm_Publisher(Node):
         else:
             self.correct_position(self.correction_axis)
 
-        r
+        
 
     def auto_correction(self) -> None:
-
-        self.correction_axis = self.axis_priority[self.correction_index]
-
-        # this block will discover if a higher priority axis is out of tolerance, 
-        # if so, we will correct that axis first
-        for i, axis in enumerate(self.axis_priority):
-            if i == self.correction_index:
-                break
-            elif self.position_error[axis] > self.upper_tolerances[axis]:
-                self.correction_index = i
-                self.correction_axis = axis
-                break
         
-        # this block corrects the highest priority axis that is out of tolerance
-        axis = self.correction_axis
-        if self.position_error[axis] > self.lower_tolerances[axis]:
-            self.hold_flag = False
-            self.correct_position(axis)
+        # z axis correction always runs
+        self.correct_z_axis()
 
-        # when the axis is within tolerance, we will hold the position for a short duration
-        elif self.position_error[axis] < self.lower_tolerances[axis] and not self.hold_flag:
-            self.hold_flag = True
-            self.hold_start_time = self.get_clock().now().to_msg().sec
-            self.correct_position(axis)
+        # x axis correction runs only if yaw within tolerance
+        if self.position_error[5] < self.lower_tolerances[5]:
+            self.correct_x_axis()
 
-        # and then increment the correction index to move to the next axis
-        elif self.position_error[axis] < self.lower_tolerances[axis] and self.hold_flag:
-            if self.get_clock().now().to_msg().sec - self.hold_start_time > self.hold_time[axis]:
-                self.hold_flag = False
-                self.correction_index += 1
-            else:
-                self.correct_position(axis)
-    
+        # otherwise, we will correct yaw
+        else:
+            self.correct_yaw_axis()
+
+        # publish the next pwm set
+        self.publish_pwm_cmd(self.next_pwm_set, False, -1.0, False)
+  
     def compute_error(self) -> None:
+        print(f"current_position: {self.current_position}, current_waypoint: {self.current_waypoint}")
         for i in range(6):
             self.world_error[i] = self.current_position[i] - self.current_waypoint[i]
             self.compute_body_error(i)
@@ -224,12 +207,28 @@ class Pwm_Publisher(Node):
         response = self.compute_response(2)
         pwm = self.correction_sets[2]
         pwm = self.scaled_pwm(pwm, response)
-        active_thrusters = [1, 0, 1, 1, 0, 0, 0, 1]
+        active_thrusters = [1, 1, 1, 1, 0, 0, 0, 0]
+        for i in range(8):
+            if active_thrusters[i]:
+                self.next_pwm_set[i] = pwm[i]
+
+    def correct_x_axis(self) -> None:
+        response = self.compute_response(0)
+        pwm = self.correction_sets[0]
+        pwm = self.scaled_pwm(pwm, response)
+        active_thrusters = [0, 0, 0, 0, 1, 1, 1, 1]
         for i in range(8):
             if active_thrusters[i]:
                 self.next_pwm_set[i] = pwm[i]
 
     def correct_yaw_axis(self) -> None:
+        response = self.compute_response(5)
+        pwm = self.correction_sets[5]
+        pwm = self.scaled_pwm(pwm, response)
+        active_thrusters = [0, 0, 0, 0, 1, 1, 1, 1]
+        for i in range(8):
+            if active_thrusters[i]:
+                self.next_pwm_set[i] = pwm[i]
 
     def scaled_pwm(self, pwm_set: List[int], scale: float) -> List[int]:
         stop_pulse = 1500  
@@ -279,40 +278,6 @@ class Pwm_Publisher(Node):
 
         self.commandPublisher.publish(msg)
 
-
-#    def publish_manual_switch(self, isManualEnabled: bool) -> None:
-#        """
-#        Publish a boolean flag to toggle manual control mode.
-#
-#        Args:
-#            isManualEnabled (bool): True to enable manual control, False to disable.
-#        """
-#        msg = Bool()
-#        msg.data = isManualEnabled
-#        self.ManualToggleSwitch.publish(msg)
-#
-#        if isManualEnabled:
-#            print('Manual mode enabled')
-#            self.publish_control_mode('FeedForward')
-#        else:
-#            self.publish_control_mode('PID')
-
-#    def publish_manual_override(self, isMistakeMade: bool) -> None:
-#        """
-#        Publish a manual override signal, typically used for emergency stops or correction.
-#
-#        Args:
-#            isMistakeMade (bool): True if an override is needed due to error or fault.
-#        """
-#        msg = Bool()
-#        msg.data = isMistakeMade
-#        self.ManualOverride.publish(msg)
-#
-#        if isMistakeMade:
-#            print('Manual override triggered')
-#        else:
-#            print('Manual override cleared')
-#
     def publish_position(self, position: List[float]) -> None:
         """
         Publish a list of positions to the 'position_topic'.
@@ -351,3 +316,40 @@ class Pwm_Publisher(Node):
         msg.data = control_mode
         self.ControlModePublisher.publish(msg)
         print(msg.data)
+
+
+
+
+#       OLD PID CORRECTION CODE
+#        self.correction_axis = self.axis_priority[self.correction_index]
+#
+#        # this block will discover if a higher priority axis is out of tolerance, 
+#        # if so, we will correct that axis first
+#        for i, axis in enumerate(self.axis_priority):
+#            if i == self.correction_index:
+#                break
+#            elif self.position_error[axis] > self.upper_tolerances[axis]:
+#                self.correction_index = i
+#                self.correction_axis = axis
+#                break
+#        
+#        # this block corrects the highest priority axis that is out of tolerance
+#        axis = self.correction_axis
+#        if self.position_error[axis] > self.lower_tolerances[axis]:
+#            self.hold_flag = False
+#            self.correct_position(axis)
+#
+#        # when the axis is within tolerance, we will hold the position for a short duration
+#        elif self.position_error[axis] < self.lower_tolerances[axis] and not self.hold_flag:
+#            self.hold_flag = True
+#            self.hold_start_time = self.get_clock().now().to_msg().sec
+#            self.correct_position(axis)
+#
+#        # and then increment the correction index to move to the next axis
+#        elif self.position_error[axis] < self.lower_tolerances[axis] and self.hold_flag:
+#            if self.get_clock().now().to_msg().sec - self.hold_start_time > self.hold_time[axis]:
+#                self.hold_flag = False
+#                self.correction_index += 1
+#            else:
+#                self.correct_position(axis)
+# 
