@@ -66,7 +66,7 @@ class Pwm_Publisher(Node):
         self.i_values = [0.005, 0.01, 0.02, 0.0005, 0.0005, 0.0002]
         self.d_values = [4, 0.5, 3, 0.5, 0.005, 0.03]
         self.i_max = [1000, 1000, 1000, 100, 100, 100]
-        self.limits = [0.5, 0.5, 0.25, 1, 1, 0.25]
+        self.limits = [0.25, 0.25, 0.25, 1, 1, 0.25]
         self.lower_tolerances = [0.25, 0.25, 0.05, 5, 5, 10]
         self.upper_tolerances = [0.1, 0.1, 0.1, 10, 10, 10]
         self.hold_time = [5.0, 5.0, 5.0, 5.0, 5.0, 5.0]
