@@ -67,7 +67,7 @@ class Pwm_Publisher(Node):
         self.d_values = [4, 0.5, 3, 0.5, 0.005, 0.03]
         self.i_max = [1000, 1000, 1000, 100, 100, 100]
         self.limits = [0.5, 0.5, 0.25, 1, 1, 0.25]
-        self.lower_tolerances = [0.5, 0.05, 0.05, 5, 5, 10]
+        self.lower_tolerances = [0.25, 0.25, 0.05, 5, 5, 10]
         self.upper_tolerances = [0.1, 0.1, 0.1, 10, 10, 10]
         self.hold_time = [5.0, 5.0, 5.0, 5.0, 5.0, 5.0]
         self.hold_start_time = 0
@@ -154,8 +154,16 @@ class Pwm_Publisher(Node):
         # z axis correction always runs
         self.correct_z_axis()
 
+        # if x and y are within tolerance, do nothing
+        if abs(self.position_error[0]) > self.lower_tolerances[0] and abs(self.position_error[1]) > self.lower_tolerances[1]:
+            pass
+
+        # if yaw is within tolerance, correct yaw before moving in x
+        elif abs(self.position_error[5]) < self.lower_tolerances[5]:
+            self.correct_yaw_axis()
+
         # x axis correction runs only if yaw within tolerance
-        if abs(self.position_error[5]) < self.lower_tolerances[5]:
+        elif abs(self.position_error[5]) < self.lower_tolerances[5]:
             self.correct_x_axis()
 
         # otherwise, we will correct yaw
