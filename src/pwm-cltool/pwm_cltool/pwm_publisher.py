@@ -62,9 +62,9 @@ class Pwm_Publisher(Node):
         self.auto_correction_active = False
         self.correction_active = False
 
-        self.p_values = [1,1,1,0.005,0.005,0.5]
-        self.i_values = [0.05, 0.05, 0.05, 0.0005, 0.0005, 0.05]
-        self.d_values = [0.5, 0.5, 0.5, 0.005, 0.005, 0.05]
+        self.p_values = [2,1,0.75,0.005,0.005,0.5]
+        self.i_values = [0.03, 0.05, 0.005, 0.0005, 0.0005, 0.05]
+        self.d_values = [4, 0.5, 0.5, 0.5, 0.005, 0.05]
         self.i_max = [1000, 1000, 1000, 100, 100, 100]
         self.limits = [0.5, 0.5, 0.5, 1, 1, 0.25]
         self.lower_tolerances = [0.05, 0.05, 0.05, 5, 5, 5]
@@ -88,23 +88,17 @@ class Pwm_Publisher(Node):
         self.derivative_error: List[float] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         
         self.correction_sets: List[List[int]] = [
-            [1440, 1500, 1460, 1540, 1600, 1400, 1500, 1560],
-            [1500, 1500, 1500, 1500, 1900, 1900, 1500, 1500],
-            [1900, 1500, 1190, 1100, 1500, 1500, 1500, 1100],
+            [1440, 1500, 1460, 1540, 1400, 1600, 1500, 1560],
+            [1500, 1500, 1500, 1500, 1900, 1100, 1900, 1100],
+            [1900, 1100, 1900, 1100, 1500, 1500, 1500, 1500],
             [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500],
             [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500],
-            [1500, 1500, 1500, 1500, 1900, 1900, 1500, 1500]            
+            [1500, 1500, 1500, 1500, 1900, 1900, 1900, 1900]            
         ] 
 
-#        self.correction_sets: List[List[int]] = [
-#            [1440, 1560, 1460, 1540, 1600, 1400, 1600, 1400],
-#            [1500, 1500, 1500, 1500, 1900, 1900, 1100, 1100],
-#            [1900, 1100, 1900, 1100, 1500, 1500, 1500, 1500],
-#            [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500],
-#            [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500],
-#            [1500, 1500, 1500, 1500, 1900, 1900, 1900, 1900]            
-#        ]
-    
+        self.next_pwm_set: List[int] = [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500]
+
+
     def timer_callback(self) -> None:
         self.compute_error()
         if not self.correction_active:
@@ -113,6 +107,8 @@ class Pwm_Publisher(Node):
             self.auto_correction()
         else:
             self.correct_position(self.correction_axis)
+
+        r
 
     def auto_correction(self) -> None:
 
@@ -223,6 +219,17 @@ class Pwm_Publisher(Node):
         pwm = self.correction_sets[axis]
         pwm = self.scaled_pwm(pwm, response)
         self.publish_pwm_cmd(pwm, False, -1.0, False)
+
+    def correct_z_axis(self) -> None:
+        response = self.compute_response(2)
+        pwm = self.correction_sets[2]
+        pwm = self.scaled_pwm(pwm, response)
+        active_thrusters = [1, 0, 1, 1, 0, 0, 0, 1]
+        for i in range(8):
+            if active_thrusters[i]:
+                self.next_pwm_set[i] = pwm[i]
+
+    def correct_yaw_axis(self) -> None:
 
     def scaled_pwm(self, pwm_set: List[int], scale: float) -> List[int]:
         stop_pulse = 1500  
