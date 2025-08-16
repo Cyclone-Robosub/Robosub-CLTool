@@ -201,7 +201,7 @@ class Pwm_Publisher(Node):
             dy = self.world_error[1]
             yaw_desired = degrees(atan2(dy, dx))
             yaw_current = self.current_position[5]
-            error = yaw_desired - yaw_current
+            error = -yaw_desired + yaw_current
     
 
         if 3 <= axis <= 5:
