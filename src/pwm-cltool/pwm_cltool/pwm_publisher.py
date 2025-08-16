@@ -62,9 +62,9 @@ class Pwm_Publisher(Node):
         self.auto_correction_active = False
         self.correction_active = False
 
-        self.p_values = [0.75,1,1,0.005,0.005,0.01]
-        self.i_values = [0.005, 0.01, 0.005, 0.0005, 0.0005, 0.0002]
-        self.d_values = [4, 0.5, 1, 0.5, 0.005, 0.03]
+        self.p_values = [0.75,1,1.5,0.005,0.005,0.01]
+        self.i_values = [0.005, 0.01, 0.02, 0.0005, 0.0005, 0.0002]
+        self.d_values = [4, 0.5, 3, 0.5, 0.005, 0.03]
         self.i_max = [1000, 1000, 1000, 100, 100, 100]
         self.limits = [0.5, 0.5, 0.5, 1, 1, 0.25]
         self.lower_tolerances = [0.05, 0.05, 0.05, 5, 5, 5]
