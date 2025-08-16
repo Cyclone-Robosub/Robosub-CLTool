@@ -124,7 +124,7 @@ class Pwm_Publisher(Node):
         self.derivative_error: List[float] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         
         self.correction_sets: List[List[int]] = [
-            [1500, 1500, 1500, 1500, 1900, 1100, 1900, 1100]
+            [1500, 1500, 1500, 1500, 1900, 1100, 1900, 1100],
             [1500, 1500, 1500, 1500, 1900, 1100, 1900, 1100],
             [1900, 1100, 1900, 1100, 1500, 1500, 1500, 1500],
             [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500],
@@ -203,11 +203,7 @@ class Pwm_Publisher(Node):
             yaw_desired = degrees(atan2(dy, dx))
             yaw_current = self.current_position[5]
             error = yaw_desired - yaw_current
-            
-            while error > 180:
-                error -= 360
-            while error < -180:
-                error += 360
+    
 
         if 3 <= axis <= 5:
             while error > 180:
