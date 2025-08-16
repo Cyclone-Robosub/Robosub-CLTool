@@ -155,11 +155,11 @@ class Pwm_Publisher(Node):
         self.correct_z_axis()
 
         # x axis correction runs only if yaw within tolerance
-        if self.position_error[5] < self.lower_tolerances[5]:
+        if abs(self.position_error[5]) < self.lower_tolerances[5]:
             self.correct_x_axis()
 
         # otherwise, we will correct yaw
-        elif self.position_error[5] > self.lower_tolerances[5] and self.position_error[0] < self.lower_tolerances[0]:
+        elif abs(self.position_error[5]) > self.lower_tolerances[5] and abs(self.position_error[0]) > self.lower_tolerances[0]:
             self.correct_yaw_axis()
         
 
