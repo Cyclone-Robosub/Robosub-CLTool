@@ -133,10 +133,15 @@ class Pwm_Publisher(Node):
         ] 
 
         self.next_pwm_set: List[int] = [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500]
+        self.counter = 0;
 
 
     def timer_callback(self) -> None:
         self.compute_error()
+        if (self.counter % 150  == 0):
+            print("timer!")
+        self.counter += 1
+
         if not self.correction_active:
             return
         elif self.auto_correction_active:

@@ -6,11 +6,18 @@ from .pwm_publisher import Pwm_Publisher
 from .plant import Plant
 
 from time import sleep
+import time
 from typing import List
 import code
 
 import readline
 import rlcompleter
+p1 = [0,0,0,0,0,0]
+p2 = [0,0,0,0,0,0]
+p3 = [0,0,0,0,0,0]
+p4 = [0,0,0,0,0,0]
+p5 = [0,0,0,0,0,0]
+p6 = [0,0,0,0,0,0]
 
 # Define the CLTool Globals
 rev_pulse: int = 1100
@@ -125,7 +132,25 @@ class Pwm_Cltool:
         console = code.InteractiveConsole(
             locals = locals
         )
+        
         console.interact(banner=banner, exitmsg="Console exiting, shutting down...")
+
+
+    def follow(self, waypoints: List[List[float]], hold_times: List[int]) -> None:
+        
+        self.pwm_node.publish_control_mode('FeedForward')
+
+        for i in range(len(waypoints)):
+
+            self.pwm_node.publish_waypoint(waypoints[i])
+            time.sleep(hold_times[i])
+
+
+
+
+                
+
+
 
     def sequence(self, times: List[float], sequence: List[List[int]], scale: List[float]) -> None:
         if scale is None:
@@ -284,6 +309,9 @@ class Pwm_Cltool:
         self.pwm_node.publish_control_mode('FeedForward')
         self.pwm_node.publish_pwm_cmd(stop_set, False, -1.0, False)
         self.pwm_node.correction_active = False
+        self.pwm_node.auto_correction_active = False
+
+
     def test_thruster(self, thruster_num: int) -> None:
         """
         Tests a single thruster by applying a pulse to it for 1 second.
