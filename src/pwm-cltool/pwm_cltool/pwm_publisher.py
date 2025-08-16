@@ -124,9 +124,9 @@ class Pwm_Publisher(Node):
         self.derivative_error: List[float] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         
         self.correction_sets: List[List[int]] = [
+            [1500, 1500, 1500, 1500, 1100, 1900, 1100, 1900],
             [1500, 1500, 1500, 1500, 1900, 1100, 1900, 1100],
-            [1500, 1500, 1500, 1500, 1900, 1100, 1900, 1100],
-            [1100, 1900, 1100, 1900, 1500, 1500, 1500, 1500],
+            [1900, 1100, 1900, 1100, 1500, 1500, 1500, 1500],
             [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500],
             [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500],
             [1500, 1500, 1500, 1500, 1100, 1100, 1100, 1100]            
@@ -147,6 +147,9 @@ class Pwm_Publisher(Node):
         
 
     def auto_correction(self) -> None:
+
+        # reset next pwm set
+        self.next_pwm_set = [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500]
         
         # z axis correction always runs
         self.correct_z_axis()
@@ -199,9 +202,9 @@ class Pwm_Publisher(Node):
         elif axis == 5:
             dx = self.world_error[0]
             dy = self.world_error[1]
-            yaw_desired = degrees(atan2(dy, dx))
+            yaw_desired = 180 + degrees(atan2(dy, dx))
             yaw_current = self.current_position[5]
-            error = -yaw_desired + yaw_current
+            error = yaw_current - yaw_current
     
 
         if 3 <= axis <= 5:
