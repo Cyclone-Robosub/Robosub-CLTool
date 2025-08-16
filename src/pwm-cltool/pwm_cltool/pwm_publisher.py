@@ -180,7 +180,8 @@ class Pwm_Publisher(Node):
 
         # axis 0 -> x axis correction (body frame)
         elif axis == 0:
-            error = sqrt(self.world_error[0]**2 + self.world_error[1]**2)
+            error = self.world_error[0]
+            #error = sqrt(self.world_error[0]**2 + self.world_error[1]**2)
 
         # axis 1 -> y axis correction (body frame)
         elif axis == 1:
