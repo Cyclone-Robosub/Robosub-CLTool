@@ -244,10 +244,16 @@ class Pwm_Publisher(Node):
             self.integral_error[i] = 0
 
     def waypoint_callback(self, msg: Float32MultiArray) -> None:
-        self.current_waypoint = list(msg.data)
+        if len(msg.data) == 6:
+            self.current_waypoint = list(msg.data)
+        else:
+            print(f"Invalid waypoint message received: {msg.data}")
 
     def position_callback(self, msg: Float32MultiArray) -> None:
-        self.current_position = list(msg.data)
+        if len(msg.data) == 6:
+            self.current_position = list(msg.data)
+        else:
+            print(f"Invalid position message received: {msg.data}")
 
     def publish_pwm_limit(self, min: int, max: int) -> None:
         msg = Int32MultiArray()
