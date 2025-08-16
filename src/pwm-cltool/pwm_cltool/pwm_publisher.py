@@ -124,7 +124,7 @@ class Pwm_Publisher(Node):
         self.derivative_error: List[float] = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
         
         self.correction_sets: List[List[int]] = [
-            [1440, 1500, 1460, 1540, 1400, 1600, 1500, 1560],
+            [1500, 1500, 1500, 1500, 1900, 1100, 1900, 1100]
             [1500, 1500, 1500, 1500, 1900, 1100, 1900, 1100],
             [1900, 1100, 1900, 1100, 1500, 1500, 1500, 1500],
             [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500],
@@ -163,7 +163,6 @@ class Pwm_Publisher(Node):
         self.publish_pwm_cmd(self.next_pwm_set, False, -1.0, False)
   
     def compute_error(self) -> None:
-        print(f"current_position: {self.current_position}, current_waypoint: {self.current_waypoint}")
         for i in range(6):
             self.world_error[i] = self.current_position[i] - self.current_waypoint[i]
             self.compute_body_error(i)
