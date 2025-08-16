@@ -159,8 +159,9 @@ class Pwm_Publisher(Node):
             self.correct_x_axis()
 
         # otherwise, we will correct yaw
-        else:
+        elif self.position_error[5] > self.lower_tolerances[5] and self.position_error[0] < self.lower_tolerances[0]:
             self.correct_yaw_axis()
+        
 
         # publish the next pwm set
         self.publish_pwm_cmd(self.next_pwm_set, False, -1.0, False)
