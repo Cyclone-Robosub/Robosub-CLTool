@@ -161,10 +161,16 @@ class Pwm_Publisher(Node):
         # Correct x if yaw is within tolerance
         elif abs(self.position_error[5]) < self.lower_tolerances[5] and abs(self.position_error[0]) > self.lower_tolerances[0]:
             self.correct_x_axis()
+            if self.correction_axis != 0:
+                self.correction_axis = 0
+                self.reset_integral_error()
 
         # Correct yaw if x or y are out of tolerance
         elif abs(self.position_error[0]) > self.lower_tolerances[0] or abs(self.position_error[1]) > self.lower_tolerances[1]:
             self.correct_yaw_axis()
+            if self.correction_axis != 5:
+                self.correction_axis = 5
+                self.reset_integral_error()
 
 
         # publish the next pwm set
