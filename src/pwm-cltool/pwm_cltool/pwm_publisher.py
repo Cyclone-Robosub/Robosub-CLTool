@@ -62,9 +62,9 @@ class Pwm_Publisher(Node):
         self.auto_correction_active = False
         self.correction_active = False
 
-        self.p_values = [2,1,0.75,0.005,0.005,0.5]
-        self.i_values = [0.03, 0.05, 0.005, 0.0005, 0.0005, 0.05]
-        self.d_values = [4, 0.5, 0.5, 0.5, 0.005, 0.05]
+        self.p_values = [0.75,1,1,0.005,0.005,0.01]
+        self.i_values = [0.005, 0.01, 0.005, 0.0005, 0.0005, 0.0002]
+        self.d_values = [4, 0.5, 1, 0.5, 0.005, 0.03]
         self.i_max = [1000, 1000, 1000, 100, 100, 100]
         self.limits = [0.5, 0.5, 0.5, 1, 1, 0.25]
         self.lower_tolerances = [0.05, 0.05, 0.05, 5, 5, 5]
@@ -129,7 +129,7 @@ class Pwm_Publisher(Node):
             [1900, 1100, 1900, 1100, 1500, 1500, 1500, 1500],
             [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500],
             [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500],
-            [1500, 1500, 1500, 1500, 1900, 1900, 1900, 1900]            
+            [1500, 1500, 1500, 1500, 1100, 1100, 1100, 1100]            
         ] 
 
         self.next_pwm_set: List[int] = [1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500]
@@ -208,7 +208,12 @@ class Pwm_Publisher(Node):
                 error -= 360
             while error < -180:
                 error += 360
-        
+
+        if 3 <= axis <= 5:
+            while error > 180:
+                error -= 360
+            while error < -180:
+                error += 360
         
         self.position_error[axis] = error
         self.derivative_error[axis] = error - old_error
