@@ -155,21 +155,17 @@ class Pwm_Publisher(Node):
         self.correct_z_axis()
 
         # if x and y are within tolerance, do nothing
-        if abs(self.position_error[0]) > self.lower_tolerances[0] and abs(self.position_error[1]) > self.lower_tolerances[1]:
+        if abs(self.position_error[0]) < self.lower_tolerances[0] and abs(self.position_error[1]) < self.lower_tolerances[1]:
             pass
 
-        # if yaw is within tolerance, correct yaw before moving in x
-        elif abs(self.position_error[5]) < self.lower_tolerances[5]:
-            self.correct_yaw_axis()
-
-        # x axis correction runs only if yaw within tolerance
-        elif abs(self.position_error[5]) < self.lower_tolerances[5]:
+        # Correct x if yaw is within tolerance
+        elif abs(self.position_error[5]) < self.lower_tolerances[5] and abs(self.position_error[0]) > self.lower_tolerances[0]:
             self.correct_x_axis()
 
-        # otherwise, we will correct yaw
-        elif abs(self.position_error[5]) > self.lower_tolerances[5] and abs(self.position_error[0]) > self.lower_tolerances[0]:
+        # Correct yaw if x or y are out of tolerance
+        elif abs(self.position_error[0]) > self.lower_tolerances[0] or abs(self.position_error[1]) > self.lower_tolerances[1]:
             self.correct_yaw_axis()
-        
+
 
         # publish the next pwm set
         self.publish_pwm_cmd(self.next_pwm_set, False, -1.0, False)
@@ -194,7 +190,7 @@ class Pwm_Publisher(Node):
 
         # axis 1 -> y axis correction (body frame)
         elif axis == 1:
-            pass
+            error = self.world_error[1]
 
         # axis 2 -> z axis correction (body frame)
         elif axis == 2:
