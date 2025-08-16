@@ -67,7 +67,7 @@ class Pwm_Publisher(Node):
         self.d_values = [4, 0.5, 3, 0.5, 0.005, 0.03]
         self.i_max = [1000, 1000, 1000, 100, 100, 100]
         self.limits = [0.5, 0.5, 0.5, 1, 1, 0.25]
-        self.lower_tolerances = [0.05, 0.05, 0.05, 5, 5, 5]
+        self.lower_tolerances = [0.5, 0.05, 0.05, 5, 5, 10]
         self.upper_tolerances = [0.1, 0.1, 0.1, 10, 10, 10]
         self.hold_time = [5.0, 5.0, 5.0, 5.0, 5.0, 5.0]
         self.hold_start_time = 0
@@ -181,8 +181,8 @@ class Pwm_Publisher(Node):
 
         # axis 0 -> x axis correction (body frame)
         elif axis == 0:
-            error = self.world_error[0]
-            #error = sqrt(self.world_error[0]**2 + self.world_error[1]**2)
+            #error = self.world_error[0]
+            error = sqrt(self.world_error[0]**2 + self.world_error[1]**2)
 
         # axis 1 -> y axis correction (body frame)
         elif axis == 1:
